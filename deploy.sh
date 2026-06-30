@@ -12,8 +12,9 @@ cd "$ROOT_DIR/backend"
 
 # Устанавливаем ВСЕ зависимости (включая devDeps — нужен @nestjs/cli для сборки)
 npm ci
-npx prisma generate
-npm run build
+npm audit fix --force 2>/dev/null || true
+./node_modules/.bin/prisma generate
+./node_modules/.bin/nest build
 
 # После сборки удаляем devDeps — в production они не нужны
 npm prune --omit=dev
