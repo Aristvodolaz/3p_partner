@@ -4,18 +4,22 @@ set -e
 echo "=== 3P Partner — Deploy ==="
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Создаём папку для логов
 mkdir -p "$ROOT_DIR/logs"
 
 # --- Backend ---
-echo "[1/4] Устанавливаем зависимости backend..."
+echo "[1/4] Backend: сборка..."
 cd "$ROOT_DIR/backend"
-npm ci --omit=dev
+
+# Устанавливаем ВСЕ зависимости (включая devDeps — нужен @nestjs/cli для сборки)
+npm ci
 npx prisma generate
 npm run build
 
+# После сборки удаляем devDeps — в production они не нужны
+npm prune --omit=dev
+
 # --- Frontend ---
-echo "[2/4] Устанавливаем зависимости frontend..."
+echo "[2/4] Frontend: сборка..."
 cd "$ROOT_DIR/frontend"
 npm ci
 npm run build
@@ -24,9 +28,8 @@ npm run build
 echo "[3/4] Перезапускаем PM2..."
 cd "$ROOT_DIR"
 
-# Проверяем, установлен ли PM2
 if ! command -v pm2 &> /dev/null; then
-  echo "PM2 не найден, устанавливаем глобально..."
+  echo "PM2 не найден, устанавливаем..."
   npm install -g pm2
 fi
 
@@ -41,5 +44,5 @@ echo "  Backend  → http://localhost:3032"
 echo "  Frontend → http://localhost:3033"
 echo "  Swagger  → http://localhost:3032/api/docs"
 echo ""
-echo "Логи: pm2 logs"
-echo "Статус: pm2 status"
+echo "Статус : pm2 status"
+echo "Логи   : pm2 logs"
