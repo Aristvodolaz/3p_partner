@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Test-NetConnection -ComputerName \"PRM-SRV-MSSQL-01.komus.net\" -Port 59587 -InformationLevel Detailed -WarningAction SilentlyContinue 2>&1)",
+      "PowerShell(Set-Location \"D:\\\\work\\\\komus\\\\3p_partner\\\\backend\"; $env:NODE_ENV=\"development\"; node dist/main 2>&1 &)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173/api/v1/partners)",
+      "Bash(curl -6 -s -o /dev/null -w \"%{http_code}\" \"http://[::1]:5173/\")",
+      "PowerShell(Get-Job)",
+      "PowerShell(Receive-Job -Keep 2>&1)"
+    ]
+  }
+}

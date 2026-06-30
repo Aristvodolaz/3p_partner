@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Partner {
+  id             Int              @id @default(autoincrement())
+  name           String           @db.NVarChar(255)
+  inn            String           @db.NVarChar(12)
+  contractNumber String           @db.NVarChar(100)
+  contactPerson  String           @db.NVarChar(255)
+  phone          String           @db.NVarChar(20)
+  email          String           @db.NVarChar(255)
+  paymentTerms   String           @db.NVarChar(Max)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now()) @db.DateTime2
+  updatedAt      DateTime         @updatedAt @db.DateTime2
+  history        PartnerHistory[]
+
+  @@map("Partners")
+}
+
+model PartnerHistory {
+  id        Int      @id @default(autoincrement())
+  partnerId Int
+  changedBy String   @db.NVarChar(255)
+  fieldName String   @db.NVarChar(100)
+  oldValue  String?  @db.NVarChar(Max)
+  newValue  String?  @db.NVarChar(Max)
+  changedAt DateTime @default(now()) @db.DateTime2
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@map("PartnerHistory")
+}
