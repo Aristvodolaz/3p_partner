@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 process.on('unhandledRejection', (reason) => {
@@ -9,10 +11,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? '*',
+    origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   });
 
@@ -33,6 +35,10 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+
+  // Отдаём собранный фронтенд как статику
+  const frontendDist = join(__dirname, '..', '..', 'frontend', 'dist');
+  app.useStaticAssets(frontendDist);
 
   const port = process.env.PORT ?? 3032;
   await app.listen(port);

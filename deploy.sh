@@ -10,19 +10,20 @@ mkdir -p "$ROOT_DIR/logs"
 echo "[1/4] Backend: сборка..."
 cd "$ROOT_DIR/backend"
 
-# Устанавливаем ВСЕ зависимости (включая devDeps — нужен @nestjs/cli для сборки)
-npm ci
-npm audit fix --force 2>/dev/null || true
+rm -rf node_modules
+npm install --no-audit
 ./node_modules/.bin/prisma generate
 ./node_modules/.bin/nest build
 
-# После сборки удаляем devDeps — в production они не нужны
+# После сборки удаляем devDeps
 npm prune --omit=dev
 
 # --- Frontend ---
 echo "[2/4] Frontend: сборка..."
 cd "$ROOT_DIR/frontend"
-npm ci
+
+rm -rf node_modules
+npm install --no-audit
 npm run build
 
 # --- PM2 ---

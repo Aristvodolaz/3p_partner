@@ -10,9 +10,11 @@ import {
   PowerOff,
   Power,
   History,
+  FileDown,
 } from 'lucide-react';
 import type { Partner } from '@/types/partner';
 import { formatDateShort } from '@/lib/utils';
+import { exportPartnerToExcel } from '@/lib/exportPartner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { PartnerForm } from './PartnerForm';
@@ -97,6 +99,14 @@ export function PartnerCard({ partner }: Props) {
           >
             <History size={14} />
             История
+          </button>
+          <button
+            className="btn-ghost text-xs text-green-700 hover:bg-green-50"
+            onClick={() => exportPartnerToExcel(partner)}
+            title="Выгрузить в Excel"
+          >
+            <FileDown size={14} />
+            Excel
           </button>
           <button
             className={`btn-ghost text-xs ml-auto ${partner.isActive ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}

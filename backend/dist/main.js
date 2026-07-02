@@ -1,18 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
-const platform_fastify_1 = require("@nestjs/platform-fastify");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const path_1 = require("path");
 const app_module_1 = require("./app.module");
 process.on('unhandledRejection', (reason) => {
     console.error('Unhandled rejection:', reason);
     process.exit(1);
 });
 async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule, new platform_fastify_1.FastifyAdapter({ logger: true }));
+    const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors({
-        origin: process.env.CORS_ORIGIN ?? '*',
+        origin: '*',
         methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     });
     app.useGlobalPipes(new common_1.ValidationPipe({
@@ -28,8 +28,10 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api/docs', app, document);
-    const port = process.env.PORT ?? 3000;
-    await app.listen(port, '0.0.0.0');
+    const frontendDist = (0, path_1.join)(__dirname, '..', '..', 'frontend', 'dist');
+    app.useStaticAssets(frontendDist);
+    const port = process.env.PORT ?? 3032;
+    await app.listen(port);
     console.log(`Application running on http://localhost:${port}`);
     console.log(`Swagger docs: http://localhost:${port}/api/docs`);
 }
