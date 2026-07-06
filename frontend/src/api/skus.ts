@@ -3,6 +3,8 @@ import type {
   ImportResult,
   ImportSkusPayload,
   Operation,
+  PartnerTariff,
+  PartnerTariffInput,
   Sku,
   SkuFormData,
   SkuPhoto,
@@ -28,6 +30,19 @@ export interface SkuQueryParams {
 export const skusApi = {
   getOperations: async (): Promise<Operation[]> => {
     const { data } = await api.get('/skus/operations');
+    return data;
+  },
+
+  getPartnerTariffs: async (partnerId: number): Promise<PartnerTariff[]> => {
+    const { data } = await api.get('/skus/tariffs', { params: { partnerId } });
+    return data;
+  },
+
+  setPartnerTariffs: async (
+    partnerId: number,
+    tariffs: PartnerTariffInput[],
+  ): Promise<PartnerTariff[]> => {
+    const { data } = await api.post('/skus/tariffs', { partnerId, tariffs });
     return data;
   },
 

@@ -1,8 +1,9 @@
 import * as XLSX from 'xlsx';
-import type { Operation, SkuFormData } from '@/types/sku';
+import type { Operation, PartnerTariffInput, SkuFormData } from '@/types/sku';
 
 export interface ParseResult {
   rows: SkuFormData[];
+  tariffs: PartnerTariffInput[];
   warnings: string[];
 }
 
@@ -76,6 +77,16 @@ export function parseSkuExcel(
     }
   }
 
+  // Строка расценок партнёра — над заголовками, значения в колонках операций
+  const tariffs: PartnerTariffInput[] = [];
+  if (headerRowIdx > 0) {
+    const tariffRow = grid[headerRowIdx - 1];
+    for (const { col, code } of opColumns) {
+      const tariff = toNumber(tariffRow?.[col]);
+      if (tariff !== undefined) tariffs.push({ code, tariff });
+    }
+  }
+
   const rows: SkuFormData[] = [];
   for (let i = headerRowIdx + 1; i < grid.length; i++) {
     const row = grid[i];
@@ -109,5 +120,5 @@ export function parseSkuExcel(
     });
   }
 
-  return { rows, warnings };
+  return { rows, tariffs, warnings };
 }

@@ -56,6 +56,7 @@ export function SkuImportDialog({ open, onClose, partner }: Props) {
       partnerId: partner.id,
       replace,
       rows: parsed.rows,
+      tariffs: parsed.tariffs.length ? parsed.tariffs : undefined,
     });
     handleClose();
   };
@@ -97,7 +98,11 @@ export function SkuImportDialog({ open, onClose, partner }: Props) {
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <FileSpreadsheet size={18} className="text-green-600" />
               <span className="font-medium">{fileName}</span>
-              <span className="text-gray-400">— {parsed.rows.length} SKU</span>
+              <span className="text-gray-400">
+                — {parsed.rows.length} SKU
+                {parsed.tariffs.length > 0 &&
+                  `, тарифы по ${parsed.tariffs.length} операциям`}
+              </span>
             </div>
             <button type="button" className="btn-ghost text-xs" onClick={reset}>
               Выбрать другой файл

@@ -22,8 +22,21 @@ model Partner {
   updatedAt      DateTime         @updatedAt @db.DateTime2
   history        PartnerHistory[]
   skus           Sku[]
+  tariffs        PartnerTariff[]
 
   @@map("Partners")
+}
+
+model PartnerTariff {
+  id          Int       @id @default(autoincrement())
+  partnerId   Int
+  operationId Int
+  tariff      Decimal   @db.Decimal(10, 2)
+  partner     Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  operation   Operation @relation(fields: [operationId], references: [id])
+
+  @@unique([partnerId, operationId])
+  @@map("PartnerTariffs")
 }
 
 model Operation {
@@ -33,7 +46,8 @@ model Operation {
   unit          String?        @db.NVarChar(100)
   tariff        Decimal?       @db.Decimal(10, 2)
   sortOrder     Int            @default(0)
-  skuOperations SkuOperation[]
+  skuOperations  SkuOperation[]
+  partnerTariffs PartnerTariff[]
 
   @@map("OperationsCatalog")
 }

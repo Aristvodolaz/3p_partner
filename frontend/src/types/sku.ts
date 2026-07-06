@@ -53,6 +53,19 @@ export interface SkuOperationInput {
   value?: string;
 }
 
+export interface PartnerTariff {
+  id: number;
+  partnerId: number;
+  operationId: number;
+  tariff: string;
+  operation: Operation;
+}
+
+export interface PartnerTariffInput {
+  code: string;
+  tariff: number;
+}
+
 export interface SkuFormData {
   article: string;
   barcode?: string;
@@ -74,6 +87,7 @@ export interface ImportSkusPayload {
   partnerId: number;
   replace: boolean;
   rows: SkuFormData[];
+  tariffs?: PartnerTariffInput[];
 }
 
 export interface ImportResult {

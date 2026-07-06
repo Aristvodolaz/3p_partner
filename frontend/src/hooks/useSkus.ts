@@ -1,16 +1,42 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { skusApi, type SkuQueryParams } from '@/api/skus';
-import type { ImportSkusPayload, SkuFormData } from '@/types/sku';
+import type {
+  ImportSkusPayload,
+  PartnerTariffInput,
+  SkuFormData,
+} from '@/types/sku';
 
 export const SKUS_KEY = ['skus'] as const;
 export const OPERATIONS_KEY = ['operations'] as const;
+export const TARIFFS_KEY = ['partner-tariffs'] as const;
 
 export function useOperations() {
   return useQuery({
     queryKey: OPERATIONS_KEY,
     queryFn: () => skusApi.getOperations(),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePartnerTariffs(partnerId?: number) {
+  return useQuery({
+    queryKey: [...TARIFFS_KEY, partnerId],
+    queryFn: () => skusApi.getPartnerTariffs(partnerId!),
+    enabled: !!partnerId,
+  });
+}
+
+export function useSetPartnerTariffs(partnerId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tariffs: PartnerTariffInput[]) =>
+      skusApi.setPartnerTariffs(partnerId, tariffs),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY });
+      toast.success('Тарифы партнёра сохранены');
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 }
 
@@ -75,6 +101,7 @@ export function useImportSkus() {
     mutationFn: (payload: ImportSkusPayload) => skusApi.import(payload),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: SKUS_KEY });
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY });
       toast.success(`Импорт завершён: создано ${res.created}, обновлено ${res.updated}`);
     },
     onError: (err: Error) => toast.error(err.message),

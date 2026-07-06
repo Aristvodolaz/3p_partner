@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  Coins,
   FileSpreadsheet,
   Package,
   Pencil,
@@ -13,6 +14,7 @@ import {
   useDeletePartnerSkus,
   useDeleteSku,
   useOperations,
+  usePartnerTariffs,
   useSkus,
   useUpdateSku,
 } from '@/hooks/useSkus';
@@ -21,6 +23,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SkuForm } from '@/components/skus/SkuForm';
 import { SkuPhotos } from '@/components/skus/SkuPhotos';
 import { SkuImportDialog } from '@/components/skus/SkuImportDialog';
+import { PartnerTariffsDialog } from '@/components/skus/PartnerTariffsDialog';
 import type { Sku, SkuFormData } from '@/types/sku';
 
 export function SkusPage() {
@@ -28,12 +31,14 @@ export function SkusPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [tariffsOpen, setTariffsOpen] = useState(false);
   const [editSku, setEditSku] = useState<Sku | null>(null);
   const [deleteSkuTarget, setDeleteSkuTarget] = useState<Sku | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
 
   const { data: partnersData } = usePartners();
   const { data: operations = [] } = useOperations();
+  const { data: partnerTariffs } = usePartnerTariffs(partnerId);
   const { data, isLoading } = useSkus({
     partnerId,
     search: search || undefined,
@@ -99,6 +104,13 @@ export function SkusPage() {
         <div className="flex flex-wrap gap-2">
           {selectedPartner && (
             <>
+              <button
+                className="btn-secondary"
+                onClick={() => setTariffsOpen(true)}
+              >
+                <Coins size={16} />
+                Тарифы
+              </button>
               <button
                 className="btn-secondary"
                 onClick={() => setImportOpen(true)}
@@ -307,6 +319,7 @@ export function SkusPage() {
       >
         <SkuForm
           operations={operations}
+          partnerTariffs={partnerTariffs}
           onSubmit={handleCreate}
           onCancel={() => setCreateOpen(false)}
           isLoading={createSku.isPending}
@@ -326,6 +339,7 @@ export function SkusPage() {
             <SkuPhotos sku={editSkuFresh} />
             <SkuForm
               operations={operations}
+              partnerTariffs={partnerTariffs}
               defaultValues={editSkuFresh}
               onSubmit={handleUpdate}
               onCancel={() => setEditSku(null)}
@@ -341,6 +355,15 @@ export function SkusPage() {
         <SkuImportDialog
           open={importOpen}
           onClose={() => setImportOpen(false)}
+          partner={selectedPartner}
+        />
+      )}
+
+      {/* Тарифы партнёра */}
+      {selectedPartner && (
+        <PartnerTariffsDialog
+          open={tariffsOpen}
+          onClose={() => setTariffsOpen(false)}
           partner={selectedPartner}
         />
       )}

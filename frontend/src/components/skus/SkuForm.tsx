@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import type { Operation, Sku, SkuFormData } from '@/types/sku';
+import type { Operation, PartnerTariff, Sku, SkuFormData } from '@/types/sku';
 import { SPECIAL_MARKS_PRESETS } from '@/types/sku';
 
 const schema = z.object({
@@ -24,6 +24,7 @@ type FormValues = z.infer<typeof schema>;
 
 interface Props {
   operations: Operation[];
+  partnerTariffs?: PartnerTariff[];
   defaultValues?: Sku;
   onSubmit: (data: SkuFormData) => Promise<void> | void;
   onCancel: () => void;
@@ -44,12 +45,17 @@ function intOrUndef(s?: string): number | undefined {
 
 export function SkuForm({
   operations,
+  partnerTariffs,
   defaultValues,
   onSubmit,
   onCancel,
   isLoading,
   submitLabel = 'Сохранить',
 }: Props) {
+  const tariffByCode = useMemo(
+    () => new Map(partnerTariffs?.map((t) => [t.operation.code, t.tariff]) ?? []),
+    [partnerTariffs],
+  );
   const {
     register,
     handleSubmit,
@@ -295,9 +301,9 @@ export function SkuForm({
                   className="flex-1 text-sm text-gray-700 cursor-pointer"
                 >
                   {op.name}
-                  {op.tariff != null && (
+                  {(tariffByCode.get(op.code) ?? op.tariff) != null && (
                     <span className="text-xs text-gray-400 ml-2">
-                      {op.tariff} руб. / {op.unit ?? 'ед.'}
+                      {tariffByCode.get(op.code) ?? op.tariff} руб. / {op.unit ?? 'ед.'}
                     </span>
                   )}
                 </label>

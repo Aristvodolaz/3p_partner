@@ -7,7 +7,12 @@
       "Bash(curl -s http://localhost:5173/api/v1/partners)",
       "Bash(curl -6 -s -o /dev/null -w \"%{http_code}\" \"http://[::1]:5173/\")",
       "PowerShell(Get-Job)",
-      "PowerShell(Receive-Job -Keep 2>&1)"
+      "PowerShell(Receive-Job -Keep 2>&1)",
+      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; npx prisma db execute --file prisma/migrations/003_create_partner_tariffs.sql 2>&1 | Select-Object -Last 1; npx prisma generate 2>&1 | Select-String 'Generated|Error'; npx nest build 2>&1 | Select-Object -Last 5; echo \"BE_EXIT=$LASTEXITCODE\")",
+      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 8; try { $r = Invoke-WebRequest http://127.0.0.1:3032/api/v1/skus/operations -SkipHttpErrorCheck; echo \"STATUS: $\\($r.StatusCode\\)\"; echo $r.Content.Substring\\(0, [Math]::Min\\(500, $r.Content.Length\\)\\) } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })",
+      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 10; try { node \"D:\\\\Temp\\\\claude\\\\D--work-komus-3p-partner\\\\60081eab-d9b3-4e7b-ad4a-0a78963f3199\\\\scratchpad\\\\test-tariffs.js\" } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })",
+      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 8; try { node \"D:\\\\Temp\\\\claude\\\\D--work-komus-3p-partner\\\\60081eab-d9b3-4e7b-ad4a-0a78963f3199\\\\scratchpad\\\\test-tariffs.js\" } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })",
+      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 8; try { $partners = Invoke-RestMethod http://127.0.0.1:3032/api/v1/partners; $pid1 = $partners.data[0].id; Invoke-RestMethod -Method Post -Uri http://127.0.0.1:3032/api/v1/skus/tariffs -ContentType 'application/json' -Body \\(@{partnerId=$pid1; tariffs=@\\(@{code='barcode_check'; tariff=5.3}\\)} | ConvertTo-Json -Depth 3\\) | Out-Null; echo \"reset ok\" } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })"
     ]
   }
 }

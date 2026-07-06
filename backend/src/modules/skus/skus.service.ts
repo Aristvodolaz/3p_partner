@@ -10,6 +10,7 @@ import { join } from 'path';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSkuDto, SkuOperationDto } from './dto/create-sku.dto';
 import { ImportSkusDto } from './dto/import-skus.dto';
+import { PartnerTariffItemDto } from './dto/partner-tariffs.dto';
 import { QuerySkuDto } from './dto/query-sku.dto';
 import { UpdateSkuDto } from './dto/update-sku.dto';
 
@@ -27,6 +28,44 @@ export class SkusService {
 
   getOperations() {
     return this.prisma.operation.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  getPartnerTariffs(partnerId: number) {
+    return this.prisma.partnerTariff.findMany({
+      where: { partnerId },
+      include: { operation: true },
+      orderBy: { operation: { sortOrder: 'asc' } },
+    });
+  }
+
+  async setPartnerTariffs(partnerId: number, tariffs: PartnerTariffItemDto[]) {
+    const partner = await this.prisma.partner.findUnique({
+      where: { id: partnerId },
+    });
+    if (!partner) {
+      throw new NotFoundException(`Партнёр #${partnerId} не найден`);
+    }
+
+    const opsByCode = new Map(
+      (await this.getOperations()).map((op) => [op.code, op.id]),
+    );
+    const unknown = tariffs.filter((t) => !opsByCode.has(t.code));
+    if (unknown.length) {
+      throw new BadRequestException(
+        `Неизвестные операции: ${unknown.map((t) => t.code).join(', ')}`,
+      );
+    }
+
+    for (const t of tariffs) {
+      const operationId = opsByCode.get(t.code)!;
+      await this.prisma.partnerTariff.upsert({
+        where: { partnerId_operationId: { partnerId, operationId } },
+        update: { tariff: t.tariff },
+        create: { partnerId, operationId, tariff: t.tariff },
+      });
+    }
+
+    return this.getPartnerTariffs(partnerId);
   }
 
   async findAll(query: QuerySkuDto) {
@@ -170,6 +209,11 @@ export class SkusService {
 
     if (dto.replace !== false) {
       await this.removeAllByPartner(dto.partnerId);
+    }
+
+    // Тарифы партнёра из строки расценок шаблона
+    if (dto.tariffs?.length) {
+      await this.setPartnerTariffs(dto.partnerId, dto.tariffs);
     }
 
     let created = 0;

@@ -25,6 +25,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { CreateSkuDto } from './dto/create-sku.dto';
 import { ImportSkusDto } from './dto/import-skus.dto';
+import { SetPartnerTariffsDto } from './dto/partner-tariffs.dto';
 import { QuerySkuDto } from './dto/query-sku.dto';
 import { UpdateSkuDto } from './dto/update-sku.dto';
 import { SkusService, UPLOADS_DIR } from './skus.service';
@@ -43,9 +44,21 @@ export class SkusController {
   constructor(private readonly skusService: SkusService) {}
 
   @Get('operations')
-  @ApiOperation({ summary: 'Каталог операций с тарифами' })
+  @ApiOperation({ summary: 'Каталог операций с тарифами по умолчанию' })
   getOperations() {
     return this.skusService.getOperations();
+  }
+
+  @Get('tariffs')
+  @ApiOperation({ summary: 'Тарифы партнёра по операциям' })
+  getPartnerTariffs(@Query('partnerId', ParseIntPipe) partnerId: number) {
+    return this.skusService.getPartnerTariffs(partnerId);
+  }
+
+  @Post('tariffs')
+  @ApiOperation({ summary: 'Установить тарифы партнёра (upsert по операциям)' })
+  setPartnerTariffs(@Body() dto: SetPartnerTariffsDto) {
+    return this.skusService.setPartnerTariffs(dto.partnerId, dto.tariffs);
   }
 
   @Get()
