@@ -24,8 +24,43 @@ model Partner {
   skus           Sku[]
   tariffs        PartnerTariff[]
   tariffHistory  TariffHistory[]
+  requests       PartnerRequest[]
 
   @@map("Partners")
+}
+
+model PartnerRequest {
+  id          Int           @id @default(autoincrement())
+  partnerId   Int
+  number      String        @unique @db.NVarChar(100)
+  status      String        @default("Новая") @db.NVarChar(50)
+  requestDate DateTime?     @db.DateTime2
+  comment     String?       @db.NVarChar(Max)
+  createdAt   DateTime      @default(now()) @db.DateTime2
+  updatedAt   DateTime      @updatedAt @db.DateTime2
+  partner     Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  items       RequestItem[]
+
+  @@index([partnerId])
+  @@map("PartnerRequests")
+}
+
+model RequestItem {
+  id           Int            @id @default(autoincrement())
+  requestId    Int
+  skuId        Int?
+  article      String         @db.NVarChar(100)
+  name         String?        @db.NVarChar(500)
+  quantity     Int
+  arrivalDate  DateTime?      @db.DateTime2
+  shipmentDate DateTime?      @db.DateTime2
+  unitCost     Decimal?       @db.Decimal(12, 2)
+  totalCost    Decimal?       @db.Decimal(14, 2)
+  request      PartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sku          Sku?           @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([requestId])
+  @@map("RequestItems")
 }
 
 model PartnerTariff {
@@ -103,6 +138,7 @@ model Sku {
   partner            Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   operations         SkuOperation[]
   photos             SkuPhoto[]
+  requestItems       RequestItem[]
 
   @@unique([partnerId, article])
   @@index([partnerId])

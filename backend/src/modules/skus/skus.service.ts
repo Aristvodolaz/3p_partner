@@ -326,6 +326,11 @@ export class SkusService {
   async remove(id: number) {
     await this.findOne(id);
     const photos = await this.prisma.skuPhoto.findMany({ where: { skuId: id } });
+    // Позиции заявок сохраняются, но теряют связь со справочником
+    await this.prisma.requestItem.updateMany({
+      where: { skuId: id },
+      data: { skuId: null },
+    });
     await this.prisma.sku.delete({ where: { id } });
     this.deletePhotoFiles(photos.map((p) => p.filename));
     return { deleted: true };
@@ -334,6 +339,10 @@ export class SkusService {
   async removeAllByPartner(partnerId: number) {
     const photos = await this.prisma.skuPhoto.findMany({
       where: { sku: { partnerId } },
+    });
+    await this.prisma.requestItem.updateMany({
+      where: { sku: { partnerId } },
+      data: { skuId: null },
     });
     const { count } = await this.prisma.sku.deleteMany({ where: { partnerId } });
     this.deletePhotoFiles(photos.map((p) => p.filename));
