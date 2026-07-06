@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { skusApi, type SkuQueryParams } from '@/api/skus';
 import type {
   ImportSkusPayload,
+  ImportTariffsPayload,
   PartnerTariffInput,
   SkuFormData,
 } from '@/types/sku';
@@ -35,6 +36,60 @@ export function useSetPartnerTariffs(partnerId: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: TARIFFS_KEY });
       toast.success('Тарифы партнёра сохранены');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useTariffHistory(partnerId?: number) {
+  return useQuery({
+    queryKey: [...TARIFFS_KEY, partnerId, 'history'],
+    queryFn: () => skusApi.getTariffHistory(partnerId!),
+    enabled: !!partnerId,
+  });
+}
+
+export function useImportTariffs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ImportTariffsPayload) => skusApi.importTariffs(payload),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY });
+      qc.invalidateQueries({ queryKey: OPERATIONS_KEY });
+      toast.success(
+        `Тарифы загружены: ${res.total} операций${res.createdOperations ? `, новых в каталоге: ${res.createdOperations}` : ''}`,
+      );
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useDeletePartnerTariffs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (partnerId: number) => skusApi.deletePartnerTariffs(partnerId),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY });
+      toast.success(`Тарифы удалены (${res.deleted})`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUpdateOperation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: number;
+      description?: string;
+      unit?: string;
+    }) => skusApi.updateOperation(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: OPERATIONS_KEY });
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY });
     },
     onError: (err: Error) => toast.error(err.message),
   });

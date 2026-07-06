@@ -1,10 +1,11 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Building2, Users, Package } from 'lucide-react';
+import { Building2, Users, Package, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/partners', label: 'Партнёры', icon: Users },
   { to: '/skus', label: 'Справочник SKU', icon: Package },
+  { to: '/tariffs', label: 'Тарифы', icon: Coins },
 ];
 
 export function Layout() {

@@ -23,6 +23,7 @@ model Partner {
   history        PartnerHistory[]
   skus           Sku[]
   tariffs        PartnerTariff[]
+  tariffHistory  TariffHistory[]
 
   @@map("Partners")
 }
@@ -40,16 +41,33 @@ model PartnerTariff {
 }
 
 model Operation {
-  id            Int            @id @default(autoincrement())
-  code          String         @unique @db.NVarChar(50)
-  name          String         @db.NVarChar(255)
-  unit          String?        @db.NVarChar(100)
-  tariff        Decimal?       @db.Decimal(10, 2)
-  sortOrder     Int            @default(0)
+  id             Int             @id @default(autoincrement())
+  code           String          @unique @db.NVarChar(50)
+  name           String          @db.NVarChar(255)
+  description    String?         @db.NVarChar(Max)
+  unit           String?         @db.NVarChar(100)
+  tariff         Decimal?        @db.Decimal(10, 2)
+  sortOrder      Int             @default(0)
   skuOperations  SkuOperation[]
   partnerTariffs PartnerTariff[]
+  tariffHistory  TariffHistory[]
 
   @@map("OperationsCatalog")
+}
+
+model TariffHistory {
+  id          Int       @id @default(autoincrement())
+  partnerId   Int
+  operationId Int
+  changedBy   String    @db.NVarChar(255)
+  oldTariff   Decimal?  @db.Decimal(10, 2)
+  newTariff   Decimal?  @db.Decimal(10, 2)
+  changedAt   DateTime  @default(now()) @db.DateTime2
+  partner     Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  operation   Operation @relation(fields: [operationId], references: [id])
+
+  @@index([partnerId])
+  @@map("TariffHistory")
 }
 
 model Sku {

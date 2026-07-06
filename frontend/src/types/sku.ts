@@ -2,6 +2,7 @@ export interface Operation {
   id: number;
   code: string;
   name: string;
+  description: string | null;
   unit: string | null;
   tariff: string | null;
   sortOrder: number;
@@ -64,6 +65,36 @@ export interface PartnerTariff {
 export interface PartnerTariffInput {
   code: string;
   tariff: number;
+}
+
+export interface TariffHistoryEntry {
+  id: number;
+  partnerId: number;
+  operationId: number;
+  changedBy: string;
+  oldTariff: string | null;
+  newTariff: string | null;
+  changedAt: string;
+  operation: Operation;
+}
+
+export interface ImportTariffItem {
+  name: string;
+  unit?: string;
+  tariff: number;
+  description?: string;
+}
+
+export interface ImportTariffsPayload {
+  partnerId: number;
+  replace: boolean;
+  items: ImportTariffItem[];
+}
+
+export interface ImportTariffsResult {
+  createdOperations: number;
+  updatedOperations: number;
+  total: number;
 }
 
 export interface SkuFormData {

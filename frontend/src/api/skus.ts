@@ -2,6 +2,8 @@ import axios from 'axios';
 import type {
   ImportResult,
   ImportSkusPayload,
+  ImportTariffsPayload,
+  ImportTariffsResult,
   Operation,
   PartnerTariff,
   PartnerTariffInput,
@@ -9,6 +11,7 @@ import type {
   SkuFormData,
   SkuPhoto,
   SkusResponse,
+  TariffHistoryEntry,
 } from '@/types/sku';
 
 const api = axios.create({ baseURL: '/api/v1' });
@@ -42,7 +45,38 @@ export const skusApi = {
     partnerId: number,
     tariffs: PartnerTariffInput[],
   ): Promise<PartnerTariff[]> => {
-    const { data } = await api.post('/skus/tariffs', { partnerId, tariffs });
+    const { data } = await api.post('/tariffs', { partnerId, tariffs });
+    return data;
+  },
+
+  importTariffs: async (
+    payload: ImportTariffsPayload,
+  ): Promise<ImportTariffsResult> => {
+    const { data } = await api.post('/tariffs/import', payload);
+    return data;
+  },
+
+  deletePartnerTariffs: async (
+    partnerId: number,
+  ): Promise<{ deleted: number }> => {
+    const { data } = await api.delete('/tariffs', { params: { partnerId } });
+    return data;
+  },
+
+  getTariffHistory: async (
+    partnerId: number,
+  ): Promise<TariffHistoryEntry[]> => {
+    const { data } = await api.get('/tariffs/history', {
+      params: { partnerId },
+    });
+    return data;
+  },
+
+  updateOperation: async (
+    id: number,
+    body: { description?: string; unit?: string },
+  ): Promise<Operation> => {
+    const { data } = await api.patch(`/tariffs/operations/${id}`, body);
     return data;
   },
 
