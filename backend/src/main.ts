@@ -40,6 +40,10 @@ async function bootstrap() {
   const frontendDist = join(__dirname, '..', '..', 'frontend', 'dist');
   app.useStaticAssets(frontendDist);
 
+  // Загруженные фото SKU
+  const uploadsDir = join(__dirname, '..', 'uploads');
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
+
   const port = process.env.PORT ?? 3032;
   await app.listen(port);
   console.log(`Application running on http://localhost:${port}`);

@@ -15,11 +15,10 @@ rm -rf node_modules dist
 
 npm install --no-audit --no-fund
 
-# Убедиться что binaryTargets есть в schema.prisma
-if ! grep -q "debian-openssl-3.0.x" prisma/schema.prisma; then
-  sed -i 's/provider      = "prisma-client-js"/provider      = "prisma-client-js"\n  binaryTargets = ["native", "debian-openssl-3.0.x"]/' prisma/schema.prisma
-  echo "  → binaryTargets добавлен в schema.prisma"
-fi
+# Убедиться что binaryTargets есть в schema.prisma (без дублирования)
+sed -i '/binaryTargets/d' prisma/schema.prisma
+sed -i 's/provider      = "prisma-client-js"/provider      = "prisma-client-js"\n  binaryTargets = ["native", "debian-openssl-3.0.x"]/' prisma/schema.prisma
+echo "  → binaryTargets установлен в schema.prisma"
 
 ./node_modules/.bin/prisma generate
 ./node_modules/.bin/nest build
@@ -51,8 +50,8 @@ if ! command -v pm2 &> /dev/null; then
   npm install -g pm2
 fi
 
-pm2 stop all 2>/dev/null || true
-pm2 delete all 2>/dev/null || true
+pm2 stop 3p-partner-backend 2>/dev/null || true
+pm2 delete 3p-partner-backend 2>/dev/null || true
 pm2 start ecosystem.config.cjs
 pm2 save
 

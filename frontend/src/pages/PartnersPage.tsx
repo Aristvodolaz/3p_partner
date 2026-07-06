@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, Users, Building2 } from 'lucide-react';
+import { Plus, Search, Users } from 'lucide-react';
 import { usePartners, useCreatePartner } from '@/hooks/usePartners';
 import { PartnerCard } from '@/components/partners/PartnerCard';
 import { PartnerForm } from '@/components/partners/PartnerForm';
@@ -27,26 +27,8 @@ export function PartnersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Building2 size={16} className="text-white" />
-              </div>
-              <div>
-                <span className="font-semibold text-gray-900">3P Partner</span>
-                <span className="text-gray-400 text-sm ml-2">НПП</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page title */}
+    <div>
+      {/* Page title */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Партнёры</h1>
@@ -143,7 +125,6 @@ export function PartnersPage() {
             ))}
           </div>
         )}
-      </main>
 
       <Dialog
         open={createOpen}

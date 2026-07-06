@@ -30,6 +30,8 @@ async function bootstrap() {
     swagger_1.SwaggerModule.setup('api/docs', app, document);
     const frontendDist = (0, path_1.join)(__dirname, '..', '..', 'frontend', 'dist');
     app.useStaticAssets(frontendDist);
+    const uploadsDir = (0, path_1.join)(__dirname, '..', 'uploads');
+    app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
     const port = process.env.PORT ?? 3032;
     await app.listen(port);
     console.log(`Application running on http://localhost:${port}`);
