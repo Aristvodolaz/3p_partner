@@ -47,12 +47,24 @@ model Operation {
   description    String?         @db.NVarChar(Max)
   unit           String?         @db.NVarChar(100)
   tariff         Decimal?        @db.Decimal(10, 2)
+  applySizeCoef  Boolean         @default(false)
   sortOrder      Int             @default(0)
   skuOperations  SkuOperation[]
   partnerTariffs PartnerTariff[]
   tariffHistory  TariffHistory[]
 
   @@map("OperationsCatalog")
+}
+
+model TariffCoefficient {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.NVarChar(10)
+  multiplier Decimal  @db.Decimal(6, 2)
+  minSum     Decimal  @db.Decimal(10, 2)
+  maxSum     Decimal? @db.Decimal(10, 2)
+  label      String   @db.NVarChar(100)
+
+  @@map("TariffCoefficients")
 }
 
 model TariffHistory {

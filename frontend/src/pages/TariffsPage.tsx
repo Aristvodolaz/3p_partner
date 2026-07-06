@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 import { usePartners } from '@/hooks/usePartners';
 import {
+  useCoefficients,
   useDeletePartnerTariffs,
   useImportTariffs,
   useOperations,
@@ -36,6 +37,7 @@ export function TariffsPage() {
   const { data: partnersData } = usePartners();
   const { data: operations = [] } = useOperations();
   const { data: tariffs } = usePartnerTariffs(partnerId);
+  const { data: coefficients = [] } = useCoefficients();
 
   const setTariffs = useSetPartnerTariffs(partnerId ?? 0);
   const deleteTariffs = useDeletePartnerTariffs();
@@ -186,7 +188,17 @@ export function TariffsPage() {
                   const draft = tariffDraft[op.code];
                   return (
                     <tr key={op.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2.5 text-gray-900">{op.name}</td>
+                      <td className="px-4 py-2.5 text-gray-900">
+                        {op.name}
+                        {op.applySizeCoef && (
+                          <span
+                            className="ml-2 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold align-middle"
+                            title="К тарифу применяется коэффициент К0-К5 по сумме трёх сторон (ШДВ)"
+                          >
+                            К
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5">
                         <input
                           value={descDraft[op.id] ?? op.description ?? ''}
@@ -223,6 +235,43 @@ export function TariffsPage() {
           <div className="px-4 py-2.5 text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
             Пустое поле — тариф для партнёра не задан (серым показан тариф по умолчанию).
             Изменения применяются кнопкой «Сохранить изменения».
+          </div>
+        </div>
+      )}
+
+      {/* Справочник коэффициентов */}
+      {selectedPartner && coefficients.length > 0 && (
+        <div className="card mt-6 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Коэффициенты по сумме трёх сторон (ШДВ)
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Применяются к операциям с пометкой «К»: итоговый тариф = базовый × коэффициент.
+              Коэффициент подбирается автоматически по ШДВ из карточки SKU.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-xs text-gray-500">
+                  <th className="px-4 py-2 font-medium">Коэффициент</th>
+                  <th className="px-4 py-2 font-medium">Тариф</th>
+                  <th className="px-4 py-2 font-medium">Сумма трёх сторон</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {coefficients.map((c) => (
+                  <tr key={c.id}>
+                    <td className="px-4 py-2 font-medium">{c.code}</td>
+                    <td className="px-4 py-2">
+                      {Number(c.multiplier) === 1 ? 'Базовый' : `×${c.multiplier}`}
+                    </td>
+                    <td className="px-4 py-2 text-gray-500">{c.label}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

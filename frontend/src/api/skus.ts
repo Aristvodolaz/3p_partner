@@ -11,6 +11,7 @@ import type {
   SkuFormData,
   SkuPhoto,
   SkusResponse,
+  TariffCoefficient,
   TariffHistoryEntry,
 } from '@/types/sku';
 
@@ -33,6 +34,11 @@ export interface SkuQueryParams {
 export const skusApi = {
   getOperations: async (): Promise<Operation[]> => {
     const { data } = await api.get('/skus/operations');
+    return data;
+  },
+
+  getCoefficients: async (): Promise<TariffCoefficient[]> => {
+    const { data } = await api.get('/tariffs/coefficients');
     return data;
   },
 

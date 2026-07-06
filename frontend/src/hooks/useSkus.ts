@@ -20,6 +20,14 @@ export function useOperations() {
   });
 }
 
+export function useCoefficients() {
+  return useQuery({
+    queryKey: ['tariff-coefficients'],
+    queryFn: () => skusApi.getCoefficients(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function usePartnerTariffs(partnerId?: number) {
   return useQuery({
     queryKey: [...TARIFFS_KEY, partnerId],

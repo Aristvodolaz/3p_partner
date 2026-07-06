@@ -5,7 +5,17 @@ export interface Operation {
   description: string | null;
   unit: string | null;
   tariff: string | null;
+  applySizeCoef: boolean;
   sortOrder: number;
+}
+
+export interface TariffCoefficient {
+  id: number;
+  code: string;
+  multiplier: string;
+  minSum: string;
+  maxSum: string | null;
+  label: string;
 }
 
 export interface SkuOperation {

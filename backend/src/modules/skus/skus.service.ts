@@ -35,6 +35,12 @@ export class SkusService {
     return this.prisma.operation.findMany({ orderBy: { sortOrder: 'asc' } });
   }
 
+  getCoefficients() {
+    return this.prisma.tariffCoefficient.findMany({
+      orderBy: { minSum: 'asc' },
+    });
+  }
+
   getPartnerTariffs(partnerId: number) {
     return this.prisma.partnerTariff.findMany({
       where: { partnerId },

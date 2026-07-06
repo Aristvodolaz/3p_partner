@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Operation, PartnerTariff, Sku, SkuFormData } from '@/types/sku';
 import { SPECIAL_MARKS_PRESETS } from '@/types/sku';
+import { useCoefficients } from '@/hooks/useSkus';
+import { calcEffectiveTariff, getSizeCoefficient } from '@/lib/tariffCalc';
 
 const schema = z.object({
   article: z.string().min(1, 'Обязательное поле').max(100),
@@ -56,9 +58,12 @@ export function SkuForm({
     () => new Map(partnerTariffs?.map((t) => [t.operation.code, t.tariff]) ?? []),
     [partnerTariffs],
   );
+  const { data: coefficients = [] } = useCoefficients();
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -77,6 +82,10 @@ export function SkuForm({
       clientRequirements: defaultValues?.clientRequirements ?? '',
     },
   });
+
+  // Текущая ШДВ для расчёта коэффициента К
+  const sumOfSidesNow = numOrUndef(watch('sumOfSides'));
+  const activeCoef = getSizeCoefficient(sumOfSidesNow, coefficients);
 
   // Операции: code → value (чекбокс включён, если код есть в Map)
   const [selectedOps, setSelectedOps] = useState<Map<string, string>>(() => {
@@ -192,6 +201,11 @@ export function SkuForm({
         <div>
           <label className="label">Сумма трёх сторон, см (ШДВ)</label>
           <input {...register('sumOfSides')} placeholder="45" inputMode="decimal" className="input" />
+          {activeCoef && Number(activeCoef.multiplier) !== 1 && (
+            <p className="mt-1 text-xs text-amber-600">
+              Коэффициент {activeCoef.code} ×{activeCoef.multiplier} ({activeCoef.label})
+            </p>
+          )}
         </div>
 
         <div>
@@ -301,11 +315,25 @@ export function SkuForm({
                   className="flex-1 text-sm text-gray-700 cursor-pointer"
                 >
                   {op.name}
-                  {(tariffByCode.get(op.code) ?? op.tariff) != null && (
-                    <span className="text-xs text-gray-400 ml-2">
-                      {tariffByCode.get(op.code) ?? op.tariff} руб. / {op.unit ?? 'ед.'}
-                    </span>
-                  )}
+                  {(() => {
+                    const eff = calcEffectiveTariff(
+                      op,
+                      tariffByCode.get(op.code),
+                      sumOfSidesNow,
+                      coefficients,
+                    );
+                    if (!eff) return null;
+                    return (
+                      <span className="text-xs text-gray-400 ml-2">
+                        {eff.total} руб. / {op.unit ?? 'ед.'}
+                        {eff.coefCode && (
+                          <span className="text-amber-600 ml-1">
+                            ({eff.base} × {eff.multiplier}, {eff.coefCode})
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })()}
                 </label>
                 {checked && (
                   <input

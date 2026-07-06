@@ -28,6 +28,12 @@ export class TariffsController {
     return this.skusService.getOperations();
   }
 
+  @Get('coefficients')
+  @ApiOperation({ summary: 'Коэффициенты К0-К5 по сумме трёх сторон (ШДВ)' })
+  getCoefficients() {
+    return this.skusService.getCoefficients();
+  }
+
   @Patch('operations/:id')
   @ApiOperation({ summary: 'Редактировать описание/единицу измерения операции' })
   updateOperation(
