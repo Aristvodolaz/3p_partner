@@ -12,7 +12,13 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import {
   CreateRequestDto,
   UpdateRequestDto,
@@ -37,6 +43,43 @@ class QueryRequestDto {
   status?: string;
 }
 
+class ExecuteOperationDto {
+  @ApiPropertyOptional({ description: 'Операция выполнена' })
+  @IsOptional()
+  @IsBoolean()
+  done?: boolean;
+
+  @ApiPropertyOptional({ description: 'Фактическое количество' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  factQty?: number;
+
+  @ApiPropertyOptional({ description: 'Брак' })
+  @IsOptional()
+  @IsBoolean()
+  isDefect?: boolean;
+
+  @ApiPropertyOptional({ description: 'Комментарий' })
+  @IsOptional()
+  @IsString()
+  comment?: string;
+}
+
+class UpdateItemFactDto {
+  @ApiPropertyOptional({ description: 'Фактическое количество по позиции' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  factQuantity?: number;
+
+  @ApiPropertyOptional({ description: 'Фактический артикул при пересорте' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  actualArticle?: string;
+}
+
 @ApiTags('Заявки партнёров')
 @Controller('requests')
 export class RequestsController {
@@ -52,6 +95,35 @@ export class RequestsController {
   @ApiOperation({ summary: 'Заявка с позициями и стоимостью' })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.requestsService.findOne(id);
+  }
+
+  @Get(':id/detailed')
+  @ApiOperation({
+    summary: 'Детализация для ТСД: операции SKU, выполнение, процент готовности',
+  })
+  findOneDetailed(@Param('id', ParseIntPipe) id: number) {
+    return this.requestsService.findOneDetailed(id);
+  }
+
+  @Patch('items/:itemId/operations/:operationId')
+  @ApiOperation({
+    summary: 'Фиксация выполнения операции по позиции (ТСД)',
+  })
+  executeOperation(
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Param('operationId', ParseIntPipe) operationId: number,
+    @Body() dto: ExecuteOperationDto,
+  ) {
+    return this.requestsService.executeOperation(itemId, operationId, dto);
+  }
+
+  @Patch('items/:itemId/fact')
+  @ApiOperation({ summary: 'Факт. количество и пересорт по позиции (ТСД)' })
+  updateItemFact(
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body() dto: UpdateItemFactDto,
+  ) {
+    return this.requestsService.updateItemFact(itemId, dto);
   }
 
   @Post()

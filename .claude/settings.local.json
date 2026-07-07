@@ -22,7 +22,16 @@
       "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 8; try { $ops = Invoke-RestMethod http://127.0.0.1:3032/api/v1/tariffs/operations; \"applySizeCoef: \" + \\(\\($ops | Where-Object applySizeCoef | ForEach-Object name\\) -join ' | '\\) } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })",
       "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; npx prisma db execute --file prisma/migrations/007_create_requests.sql 2>&1 | Select-Object -Last 1; npx prisma generate 2>&1 | Select-String 'Generated|Error'; npx nest build 2>&1 | Select-Object -Last 8; echo \"EXIT=$LASTEXITCODE\")",
       "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; npx prisma generate 2>&1 | Select-String 'Generated|Error'; npx nest build 2>&1 | Select-Object -Last 8; echo \"EXIT=$LASTEXITCODE\")",
-      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 9; try { node \"D:\\\\Temp\\\\claude\\\\D--work-komus-3p-partner\\\\60081eab-d9b3-4e7b-ad4a-0a78963f3199\\\\scratchpad\\\\test-requests.js\" } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })"
+      "PowerShell(cd D:\\\\work\\\\komus\\\\3p_partner\\\\backend; $proc = Start-Process node -ArgumentList 'dist/main.js' -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 9; try { node \"D:\\\\Temp\\\\claude\\\\D--work-komus-3p-partner\\\\60081eab-d9b3-4e7b-ad4a-0a78963f3199\\\\scratchpad\\\\test-requests.js\" } finally { Stop-Process -Id $proc.Id -Force -Confirm:$false })",
+      "Bash(node -e ' *)",
+      "Bash(npx prisma *)",
+      "Bash(npx nest *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(echo \"NEST_EXIT=$?\")",
+      "Bash(curl -s http://127.0.0.1:3032/api/v1/requests/2/detailed)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X PATCH http://127.0.0.1:3032/api/v1/requests/items/5/operations/7 -H 'Content-Type: application/json' -d '{\"done\":true,\"factQty\":10,\"isDefect\":false,\"comment\":\"тест\"}')",
+      "Bash(curl -s -X PATCH http://127.0.0.1:3032/api/v1/requests/items/5/fact -H 'Content-Type: application/json' -d '{\"factQuantity\":9,\"actualArticle\":\"456\"}')"
     ]
   }
 }

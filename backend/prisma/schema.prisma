@@ -46,21 +46,42 @@ model PartnerRequest {
 }
 
 model RequestItem {
-  id           Int            @id @default(autoincrement())
-  requestId    Int
-  skuId        Int?
-  article      String         @db.NVarChar(100)
-  name         String?        @db.NVarChar(500)
-  quantity     Int
-  arrivalDate  DateTime?      @db.DateTime2
-  shipmentDate DateTime?      @db.DateTime2
-  unitCost     Decimal?       @db.Decimal(12, 2)
-  totalCost    Decimal?       @db.Decimal(14, 2)
-  request      PartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  sku          Sku?           @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id            Int                      @id @default(autoincrement())
+  requestId     Int
+  skuId         Int?
+  article       String                   @db.NVarChar(100)
+  name          String?                  @db.NVarChar(500)
+  quantity      Int
+  factQuantity  Int?
+  actualArticle String?                  @db.NVarChar(100)
+  arrivalDate   DateTime?                @db.DateTime2
+  shipmentDate  DateTime?                @db.DateTime2
+  unitCost      Decimal?                 @db.Decimal(12, 2)
+  totalCost     Decimal?                 @db.Decimal(14, 2)
+  request       PartnerRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sku           Sku?                     @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  executions    ItemOperationExecution[]
 
   @@index([requestId])
   @@map("RequestItems")
+}
+
+model ItemOperationExecution {
+  id            Int         @id @default(autoincrement())
+  requestItemId Int
+  operationId   Int
+  done          Boolean     @default(false)
+  factQty       Int?
+  isDefect      Boolean     @default(false)
+  comment       String?     @db.NVarChar(Max)
+  executedBy    String?     @db.NVarChar(255)
+  executedAt    DateTime?   @db.DateTime2
+  item          RequestItem @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
+  operation     Operation   @relation(fields: [operationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([requestItemId, operationId])
+  @@index([requestItemId])
+  @@map("ItemOperationExecutions")
 }
 
 model PartnerTariff {
@@ -87,6 +108,7 @@ model Operation {
   skuOperations  SkuOperation[]
   partnerTariffs PartnerTariff[]
   tariffHistory  TariffHistory[]
+  executions     ItemOperationExecution[]
 
   @@map("OperationsCatalog")
 }

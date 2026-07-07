@@ -16,6 +16,25 @@ const requestInclude = {
   items: { include: { sku: { select: { id: true, article: true, name: true } } } },
 } satisfies Prisma.PartnerRequestInclude;
 
+const requestDetailInclude = {
+  partner: { select: { id: true, name: true } },
+  items: {
+    include: {
+      sku: {
+        select: {
+          id: true,
+          article: true,
+          name: true,
+          sumOfSides: true,
+          specialMarks: true,
+          operations: { include: { operation: true } },
+        },
+      },
+      executions: { include: { operation: true } },
+    },
+  },
+} satisfies Prisma.PartnerRequestInclude;
+
 interface CostContext {
   /** артикул → { skuId, unitCost } */
   byArticle: Map<string, { skuId: number; unitCost: number }>;
@@ -55,6 +74,114 @@ export class RequestsService {
     });
     if (!request) throw new NotFoundException(`Заявка #${id} не найдена`);
     return request;
+  }
+
+  /** Заявка с операциями SKU и их выполнением (для ТСД и детализации) */
+  async findOneDetailed(id: number) {
+    const request = await this.prisma.partnerRequest.findUnique({
+      where: { id },
+      include: requestDetailInclude,
+    });
+    if (!request) throw new NotFoundException(`Заявка #${id} не найдена`);
+
+    // Процент готовности: выполненные операции / все операции позиций
+    let totalOps = 0;
+    let doneOps = 0;
+    for (const item of request.items) {
+      const ops = item.sku?.operations.length ?? 0;
+      totalOps += ops;
+      const doneSet = new Set(
+        item.executions.filter((e) => e.done).map((e) => e.operationId),
+      );
+      doneOps += item.sku
+        ? item.sku.operations.filter((so) => doneSet.has(so.operationId)).length
+        : 0;
+    }
+    const progress = totalOps > 0 ? Math.round((doneOps / totalOps) * 100) : 0;
+
+    return { ...request, progress, totalOps, doneOps };
+  }
+
+  /**
+   * Фиксация выполнения операции по позиции (ТСД).
+   * Ограничение: операция должна входить в справочник SKU этой позиции.
+   */
+  async executeOperation(
+    itemId: number,
+    operationId: number,
+    data: {
+      done?: boolean;
+      factQty?: number | null;
+      isDefect?: boolean;
+      comment?: string | null;
+    },
+    executedBy = 'tsd',
+  ) {
+    const item = await this.prisma.requestItem.findUnique({
+      where: { id: itemId },
+      include: { sku: { include: { operations: true } } },
+    });
+    if (!item) throw new NotFoundException(`Позиция #${itemId} не найдена`);
+    if (!item.sku) {
+      throw new ConflictException(
+        `Артикул «${item.article}» не найден в справочнике SKU — операции недоступны`,
+      );
+    }
+    const allowed = item.sku.operations.some(
+      (so) => so.operationId === operationId,
+    );
+    if (!allowed) {
+      throw new ConflictException(
+        'Операция не входит в утверждённый список операций этого SKU',
+      );
+    }
+
+    const execData = {
+      done: data.done ?? undefined,
+      factQty: data.factQty === undefined ? undefined : data.factQty,
+      isDefect: data.isDefect ?? undefined,
+      comment: data.comment === undefined ? undefined : data.comment,
+      executedBy,
+      executedAt: new Date(),
+    };
+
+    return this.prisma.itemOperationExecution.upsert({
+      where: {
+        requestItemId_operationId: { requestItemId: itemId, operationId },
+      },
+      update: execData,
+      create: {
+        requestItemId: itemId,
+        operationId,
+        done: data.done ?? false,
+        factQty: data.factQty ?? null,
+        isDefect: data.isDefect ?? false,
+        comment: data.comment ?? null,
+        executedBy,
+        executedAt: new Date(),
+      },
+      include: { operation: true },
+    });
+  }
+
+  /** Факт. количество и пересорт на уровне позиции */
+  async updateItemFact(
+    itemId: number,
+    data: { factQuantity?: number | null; actualArticle?: string | null },
+  ) {
+    const item = await this.prisma.requestItem.findUnique({
+      where: { id: itemId },
+    });
+    if (!item) throw new NotFoundException(`Позиция #${itemId} не найдена`);
+    return this.prisma.requestItem.update({
+      where: { id: itemId },
+      data: {
+        factQuantity:
+          data.factQuantity === undefined ? undefined : data.factQuantity,
+        actualArticle:
+          data.actualArticle === undefined ? undefined : data.actualArticle,
+      },
+    });
   }
 
   async create(dto: CreateRequestDto) {
