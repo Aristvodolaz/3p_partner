@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +32,10 @@ interface Props {
   onCancel: () => void;
   isLoading?: boolean;
   submitLabel?: string;
+  /** Вызывается при изменении признака «есть несохранённые правки» */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** id атрибута <form>, чтобы кнопка "Сохранить" в шапке диалога могла сабмитить форму снаружи */
+  formId?: string;
 }
 
 function numOrUndef(s?: string): number | undefined {
@@ -53,6 +57,8 @@ export function SkuForm({
   onCancel,
   isLoading,
   submitLabel = 'Сохранить',
+  onDirtyChange,
+  formId = 'sku-form',
 }: Props) {
   const tariffByCode = useMemo(
     () => new Map(partnerTariffs?.map((t) => [t.operation.code, t.tariff]) ?? []),
@@ -64,7 +70,7 @@ export function SkuForm({
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -108,6 +114,28 @@ export function SkuForm({
   const [marks, setMarks] = useState<string[]>(initialMarks);
   const [customMark, setCustomMark] = useState('');
 
+  // Отслеживание несохранённых изменений: RHF-поля + отметки + операции
+  const initialMarksKey = useMemo(() => [...initialMarks].sort().join('|'), [initialMarks]);
+  const marksDirty = [...marks].sort().join('|') !== initialMarksKey;
+
+  const initialOpsKey = useMemo(
+    () =>
+      (defaultValues?.operations ?? [])
+        .map((so) => `${so.operation.code}:${so.value ?? '1'}`)
+        .sort()
+        .join('|'),
+    [defaultValues],
+  );
+  const opsDirty =
+    Array.from(selectedOps.entries())
+      .map(([code, value]) => `${code}:${value}`)
+      .sort()
+      .join('|') !== initialOpsKey;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty || marksDirty || opsDirty);
+  }, [isDirty, marksDirty, opsDirty, onDirtyChange]);
+
   const toggleOp = (code: string) => {
     setSelectedOps((prev) => {
       const next = new Map(prev);
@@ -134,20 +162,22 @@ export function SkuForm({
   };
 
   const submit = (values: FormValues) => {
+    // Явно отправляем null для очищенных полей, а не undefined — иначе
+    // бэкенд/Prisma трактует undefined как «не менять» и старое значение остаётся.
     const data: SkuFormData = {
       article: values.article.trim(),
       name: values.name.trim(),
-      barcode: values.barcode?.trim() || undefined,
-      color: values.color?.trim() || undefined,
-      shelfLife: values.shelfLife?.trim() || undefined,
-      sumOfSides: numOrUndef(values.sumOfSides),
-      weight: numOrUndef(values.weight),
-      boxQuant: intOrUndef(values.boxQuant),
-      palletQuant: intOrUndef(values.palletQuant),
-      packCostUnit: numOrUndef(values.packCostUnit),
-      packCostBox: numOrUndef(values.packCostBox),
-      clientRequirements: values.clientRequirements?.trim() || undefined,
-      specialMarks: marks.length ? marks.join(', ') : undefined,
+      barcode: values.barcode?.trim() || null,
+      color: values.color?.trim() || null,
+      shelfLife: values.shelfLife?.trim() || null,
+      sumOfSides: numOrUndef(values.sumOfSides) ?? null,
+      weight: numOrUndef(values.weight) ?? null,
+      boxQuant: intOrUndef(values.boxQuant) ?? null,
+      palletQuant: intOrUndef(values.palletQuant) ?? null,
+      packCostUnit: numOrUndef(values.packCostUnit) ?? null,
+      packCostBox: numOrUndef(values.packCostBox) ?? null,
+      clientRequirements: values.clientRequirements?.trim() || null,
+      specialMarks: marks.length ? marks.join(', ') : null,
       operations: Array.from(selectedOps.entries()).map(([code, value]) => ({
         code,
         value: value.trim() || '1',
@@ -157,7 +187,7 @@ export function SkuForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Артикул *</label>

@@ -109,18 +109,18 @@ export interface ImportTariffsResult {
 
 export interface SkuFormData {
   article: string;
-  barcode?: string;
+  barcode?: string | null;
   name: string;
-  color?: string;
-  shelfLife?: string;
-  sumOfSides?: number;
-  weight?: number;
-  clientRequirements?: string;
-  specialMarks?: string;
-  boxQuant?: number;
-  palletQuant?: number;
-  packCostUnit?: number;
-  packCostBox?: number;
+  color?: string | null;
+  shelfLife?: string | null;
+  sumOfSides?: number | null;
+  weight?: number | null;
+  clientRequirements?: string | null;
+  specialMarks?: string | null;
+  boxQuant?: number | null;
+  palletQuant?: number | null;
+  packCostUnit?: number | null;
+  packCostBox?: number | null;
   operations?: SkuOperationInput[];
 }
 

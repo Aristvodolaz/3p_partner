@@ -5,6 +5,7 @@ import {
   Package,
   Pencil,
   Plus,
+  Save,
   Search,
   Trash2,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import { SkuForm } from '@/components/skus/SkuForm';
 import { SkuPhotos } from '@/components/skus/SkuPhotos';
 import { SkuImportDialog } from '@/components/skus/SkuImportDialog';
 import { PartnerTariffsDialog } from '@/components/skus/PartnerTariffsDialog';
+import { SkuViewDialog } from '@/components/skus/SkuViewDialog';
 import type { Sku, SkuFormData } from '@/types/sku';
 
 export function SkusPage() {
@@ -32,9 +34,12 @@ export function SkusPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [tariffsOpen, setTariffsOpen] = useState(false);
+  const [viewSku, setViewSku] = useState<Sku | null>(null);
   const [editSku, setEditSku] = useState<Sku | null>(null);
   const [deleteSkuTarget, setDeleteSkuTarget] = useState<Sku | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
+  const [createDirty, setCreateDirty] = useState(false);
+  const [editDirty, setEditDirty] = useState(false);
 
   const { data: partnersData } = usePartners();
   const { data: operations = [] } = useOperations();
@@ -57,10 +62,14 @@ export function SkusPage() {
   const skus = data?.data ?? [];
   const total = data?.total ?? 0;
 
-  // Актуальная версия редактируемого SKU из кэша (для фото)
+  // Актуальная версия редактируемого/просматриваемого SKU из кэша (для фото)
   const editSkuFresh = useMemo(
     () => (editSku ? skus.find((s) => s.id === editSku.id) ?? editSku : null),
     [skus, editSku],
+  );
+  const viewSkuFresh = useMemo(
+    () => (viewSku ? skus.find((s) => s.id === viewSku.id) ?? viewSku : null),
+    [skus, viewSku],
   );
 
   const partnerName = (id: number) =>
@@ -70,11 +79,13 @@ export function SkusPage() {
     if (!partnerId) return;
     await createSku.mutateAsync({ ...formData, partnerId });
     setCreateOpen(false);
+    setCreateDirty(false);
   };
 
   const handleUpdate = async (formData: SkuFormData) => {
     await updateSku.mutateAsync(formData);
     setEditSku(null);
+    setEditDirty(false);
   };
 
   const handleDelete = async () => {
@@ -226,7 +237,14 @@ export function SkusPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{sku.name}</div>
+                      <button
+                        type="button"
+                        onClick={() => setViewSku(sku)}
+                        className="font-medium text-gray-900 hover:text-primary hover:underline text-left"
+                        title="Просмотреть карточку"
+                      >
+                        {sku.name}
+                      </button>
                       <div className="text-xs text-gray-400">
                         {[
                           sku.color,
@@ -310,18 +328,48 @@ export function SkusPage() {
         </div>
       )}
 
+      {/* Просмотр карточки (без редактирования) */}
+      <SkuViewDialog
+        sku={viewSkuFresh}
+        onClose={() => setViewSku(null)}
+        onEdit={(sku) => {
+          setViewSku(null);
+          setEditSku(sku);
+        }}
+      />
+
       {/* Создание */}
       <Dialog
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateDirty(false);
+        }}
         title={`Добавить SKU — ${selectedPartner?.name ?? ''}`}
         size="xl"
+        isDirty={createDirty}
+        headerActions={
+          <button
+            type="submit"
+            form="sku-form-create"
+            className="btn-primary text-xs px-3 py-1.5"
+            disabled={createSku.isPending}
+          >
+            <Save size={14} />
+            {createSku.isPending ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        }
       >
         <SkuForm
+          formId="sku-form-create"
           operations={operations}
           partnerTariffs={partnerTariffs}
           onSubmit={handleCreate}
-          onCancel={() => setCreateOpen(false)}
+          onCancel={() => {
+            setCreateOpen(false);
+            setCreateDirty(false);
+          }}
+          onDirtyChange={setCreateDirty}
           isLoading={createSku.isPending}
           submitLabel="Создать SKU"
         />
@@ -330,19 +378,41 @@ export function SkusPage() {
       {/* Редактирование */}
       <Dialog
         open={!!editSkuFresh}
-        onClose={() => setEditSku(null)}
+        onClose={() => {
+          setEditSku(null);
+          setEditDirty(false);
+        }}
         title={`SKU ${editSkuFresh?.article ?? ''} — ${editSkuFresh ? partnerName(editSkuFresh.partnerId) : ''}`}
         size="xl"
+        isDirty={editDirty}
+        headerActions={
+          editSkuFresh && (
+            <button
+              type="submit"
+              form="sku-form-edit"
+              className="btn-primary text-xs px-3 py-1.5"
+              disabled={updateSku.isPending}
+            >
+              <Save size={14} />
+              {updateSku.isPending ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          )
+        }
       >
         {editSkuFresh && (
           <div className="space-y-4">
             <SkuPhotos sku={editSkuFresh} />
             <SkuForm
+              formId="sku-form-edit"
               operations={operations}
               partnerTariffs={partnerTariffs}
               defaultValues={editSkuFresh}
               onSubmit={handleUpdate}
-              onCancel={() => setEditSku(null)}
+              onCancel={() => {
+                setEditSku(null);
+                setEditDirty(false);
+              }}
+              onDirtyChange={setEditDirty}
               isLoading={updateSku.isPending}
               submitLabel="Сохранить изменения"
             />
