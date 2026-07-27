@@ -7,13 +7,21 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.MoveToInbox
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -41,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.npp.tsd.data.model.RequestItemDetailed
 import com.npp.tsd.data.model.RequestStatus
+import com.npp.tsd.ui.common.StatusBadge
 import com.npp.tsd.ui.common.UiState
 import com.npp.tsd.ui.common.ViewModelFactory
 
@@ -51,6 +60,10 @@ fun RequestDetailScreen(
     factory: ViewModelFactory,
     onBack: () -> Unit,
     onOpenItem: (Int) -> Unit,
+    onOpenReceiving: (Int) -> Unit,
+    onOpenStorage: (Int) -> Unit,
+    onOpenShipping: (Int) -> Unit,
+    onOpenDocuments: (Int) -> Unit,
 ) {
     val vm: RequestDetailViewModel = viewModel(factory = factory)
     androidx.compose.runtime.LaunchedEffect(requestId) { vm.load(requestId) }
@@ -91,7 +104,10 @@ fun RequestDetailScreen(
                 val request = s.data
                 Column(Modifier.fillMaxSize().padding(padding)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                        Text(request.partner.name, fontWeight = FontWeight.SemiBold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(request.partner.name, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            StatusBadge(request.status)
+                        }
                         request.comment?.takeIf { it.isNotBlank() }?.let {
                             Text(it, style = MaterialTheme.typography.bodySmall)
                         }
@@ -108,6 +124,36 @@ fun RequestDetailScreen(
                             progress = { request.progress / 100f },
                             modifier = Modifier.fillMaxWidth().height(8.dp).padding(top = 6.dp),
                         )
+
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            AssistChip(
+                                onClick = { onOpenReceiving(requestId) },
+                                label = { Text("Приёмка") },
+                                leadingIcon = { Icon(Icons.Filled.MoveToInbox, contentDescription = null, modifier = Modifier.height(18.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(),
+                            )
+                            AssistChip(
+                                onClick = { onOpenStorage(requestId) },
+                                label = { Text("Хранение") },
+                                leadingIcon = { Icon(Icons.Filled.Inventory2, contentDescription = null, modifier = Modifier.height(18.dp)) },
+                            )
+                            AssistChip(
+                                onClick = { onOpenShipping(requestId) },
+                                label = { Text("Отгрузка") },
+                                leadingIcon = { Icon(Icons.Filled.LocalShipping, contentDescription = null, modifier = Modifier.height(18.dp)) },
+                            )
+                            AssistChip(
+                                onClick = { onOpenDocuments(requestId) },
+                                label = { Text("Документы") },
+                                leadingIcon = { Icon(Icons.Filled.Description, contentDescription = null, modifier = Modifier.height(18.dp)) },
+                            )
+                        }
                     }
 
                     LazyColumn(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {

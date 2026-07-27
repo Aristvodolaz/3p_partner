@@ -21,6 +21,27 @@ class ViewModelFactory(private val container: AppContainer) : ViewModelProvider.
             modelClass.isAssignableFrom(com.npp.tsd.ui.settings.SettingsViewModel::class.java) ->
                 com.npp.tsd.ui.settings.SettingsViewModel(container.settingsRepository) as T
 
+            modelClass.isAssignableFrom(com.npp.tsd.ui.receiving.ReceivingViewModel::class.java) ->
+                com.npp.tsd.ui.receiving.ReceivingViewModel(
+                    container.requestsRepository,
+                    container.warehouseRepository,
+                ) as T
+
+            modelClass.isAssignableFrom(com.npp.tsd.ui.storage.StorageViewModel::class.java) ->
+                com.npp.tsd.ui.storage.StorageViewModel(
+                    container.requestsRepository,
+                    container.warehouseRepository,
+                ) as T
+
+            modelClass.isAssignableFrom(com.npp.tsd.ui.shipping.ShippingViewModel::class.java) ->
+                com.npp.tsd.ui.shipping.ShippingViewModel(
+                    container.requestsRepository,
+                    container.warehouseRepository,
+                ) as T
+
+            modelClass.isAssignableFrom(com.npp.tsd.ui.documents.DocumentsViewModel::class.java) ->
+                com.npp.tsd.ui.documents.DocumentsViewModel(container.warehouseRepository) as T
+
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }

@@ -141,11 +141,31 @@ data class RequestDetailed(
     val doneOps: Int = 0,
 )
 
+/**
+ * Жизненный цикл заявки: Запланировано → Приёмка → Хранение → В работе →
+ * Готово → Отгружено → Закрыто. «Дефект» — отдельный статус вне линейки.
+ */
 object RequestStatus {
-    const val NEW = "Новая"
-    const val IN_PROGRESS = "В обработке"
-    const val DONE = "Выполнена"
-    const val CANCELLED = "Отменена"
+    const val PLANNED = "Запланировано"
+    const val RECEIVING = "Приёмка"
+    const val STORAGE = "Хранение"
+    const val IN_PROGRESS = "В работе"
+    const val DONE = "Готово"
+    const val SHIPPED = "Отгружено"
+    const val CLOSED = "Закрыто"
+    const val DEFECT = "Дефект"
 
-    val ALL = listOf(NEW, IN_PROGRESS, DONE, CANCELLED)
+    val ALL = listOf(PLANNED, RECEIVING, STORAGE, IN_PROGRESS, DONE, SHIPPED, CLOSED, DEFECT)
+
+    fun colorHex(status: String): Long = when (status) {
+        PLANNED -> 0xFF6B7280
+        RECEIVING -> 0xFF9333EA
+        STORAGE -> 0xFF0EA5E9
+        IN_PROGRESS -> 0xFF2563EB
+        DONE -> 0xFF16A34A
+        SHIPPED -> 0xFF0D9488
+        CLOSED -> 0xFF4B5563
+        DEFECT -> 0xFFDC2626
+        else -> 0xFF9CA3AF
+    }
 }

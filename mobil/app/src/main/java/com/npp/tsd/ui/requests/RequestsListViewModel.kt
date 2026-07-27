@@ -43,7 +43,7 @@ class RequestsListViewModel(private val repository: RequestsRepository) : ViewMo
                 val filtered = if (_showCompleted.value) {
                     all
                 } else {
-                    all.filter { it.status != RequestStatus.DONE && it.status != RequestStatus.CANCELLED }
+                    all.filter { it.status != RequestStatus.CLOSED && it.status != RequestStatus.DEFECT }
                 }
                 _state.value = UiState.Success(filtered)
             } catch (e: Exception) {

@@ -38,7 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.npp.tsd.data.model.PartnerRequest
-import com.npp.tsd.data.model.RequestStatus
+import com.npp.tsd.ui.common.StatusBadge
 import com.npp.tsd.ui.common.UiState
 import com.npp.tsd.ui.common.ViewModelFactory
 
@@ -156,26 +156,5 @@ private fun RequestRow(request: PartnerRequest, onClick: () -> Unit) {
                 request.requestDate?.let { Text(it.take(10)) }
             }
         }
-    }
-}
-
-@Composable
-private fun StatusBadge(status: String) {
-    val (bg, fg) = when (status) {
-        RequestStatus.DONE -> androidx.compose.ui.graphics.Color(0xFFDCFCE7) to androidx.compose.ui.graphics.Color(0xFF15803D)
-        RequestStatus.IN_PROGRESS -> androidx.compose.ui.graphics.Color(0xFFDBEAFE) to androidx.compose.ui.graphics.Color(0xFF1D4ED8)
-        RequestStatus.CANCELLED -> androidx.compose.ui.graphics.Color(0xFFFEE2E2) to androidx.compose.ui.graphics.Color(0xFFB91C1C)
-        else -> androidx.compose.ui.graphics.Color(0xFFF3F4F6) to androidx.compose.ui.graphics.Color(0xFF4B5563)
-    }
-    androidx.compose.material3.Surface(
-        color = bg,
-        shape = RoundedCornerShape(50),
-    ) {
-        Text(
-            status,
-            color = fg,
-            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-        )
     }
 }
