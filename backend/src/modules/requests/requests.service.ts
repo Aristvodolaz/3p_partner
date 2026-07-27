@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { advanceStatus } from '../../common/request-status';
 import {
   CreateRequestDto,
   RequestItemDto,
@@ -145,7 +146,7 @@ export class RequestsService {
       executedAt: new Date(),
     };
 
-    return this.prisma.itemOperationExecution.upsert({
+    const execution = await this.prisma.itemOperationExecution.upsert({
       where: {
         requestItemId_operationId: { requestItemId: itemId, operationId },
       },
@@ -162,6 +163,31 @@ export class RequestsService {
       },
       include: { operation: true },
     });
+
+    await this.advanceStatusAfterExecution(item.requestId);
+
+    return execution;
+  }
+
+  /**
+   * Как только по заявке отмечена хотя бы одна операция — статус двигается
+   * в «В работе»; когда все операции по всем позициям выполнены — в «Готово».
+   */
+  private async advanceStatusAfterExecution(requestId: number) {
+    const request = await this.prisma.partnerRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) return;
+
+    const { progress } = await this.findOneDetailed(requestId);
+    const target = progress >= 100 ? 'Готово' : 'В работе';
+    const nextStatus = advanceStatus(request.status, target);
+    if (nextStatus !== request.status) {
+      await this.prisma.partnerRequest.update({
+        where: { id: requestId },
+        data: { status: nextStatus },
+      });
+    }
   }
 
   /** Факт. количество и пересорт на уровне позиции */

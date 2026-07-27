@@ -33,13 +33,16 @@ model PartnerRequest {
   id          Int           @id @default(autoincrement())
   partnerId   Int
   number      String        @unique @db.NVarChar(100)
-  status      String        @default("Новая") @db.NVarChar(50)
+  status      String        @default("Запланировано") @db.NVarChar(50)
   requestDate DateTime?     @db.DateTime2
   comment     String?       @db.NVarChar(Max)
   createdAt   DateTime      @default(now()) @db.DateTime2
   updatedAt   DateTime      @updatedAt @db.DateTime2
   partner     Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   items       RequestItem[]
+  receipts    Receipt[]
+  shipments   Shipment[]
+  documents   WarehouseDocument[]
 
   @@index([partnerId])
   @@map("PartnerRequests")
@@ -61,9 +64,102 @@ model RequestItem {
   request       PartnerRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
   sku           Sku?                     @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   executions    ItemOperationExecution[]
+  receiptItems  ReceiptItem[]
 
   @@index([requestId])
   @@map("RequestItems")
+}
+
+model Receipt {
+  id         Int            @id @default(autoincrement())
+  requestId  Int
+  type       String         @db.NVarChar(20) // PALLET | BOX | UNIT
+  isPartial  Boolean        @default(false)
+  receivedBy String         @db.NVarChar(255)
+  comment    String?        @db.NVarChar(Max)
+  createdAt  DateTime       @default(now()) @db.DateTime2
+  request    PartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  items      ReceiptItem[]
+
+  @@index([requestId])
+  @@map("Receipts")
+}
+
+model ReceiptItem {
+  id                 Int          @id @default(autoincrement())
+  receiptId          Int
+  requestItemId      Int?
+  article            String       @db.NVarChar(100)
+  expectedQty        Int
+  acceptedQty        Int
+  discrepancyType    String?      @db.NVarChar(30) // QUALITY | NAME | QUANTITY | PACKAGING | DEFECT
+  discrepancyComment String?      @db.NVarChar(Max)
+  receipt            Receipt      @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  requestItem        RequestItem? @relation(fields: [requestItemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([receiptId])
+  @@map("ReceiptItems")
+}
+
+model StorageMovement {
+  id            Int      @id @default(autoincrement())
+  partnerId     Int
+  article       String   @db.NVarChar(100)
+  requestItemId Int?
+  address       String   @db.NVarChar(100)
+  quantity      Int // положительное — приход на адрес, отрицательное — списание
+  type          String   @db.NVarChar(20) // PLACE | REMOVE | MOVE_OUT | MOVE_IN
+  comment       String?  @db.NVarChar(Max)
+  createdBy     String   @db.NVarChar(255)
+  createdAt     DateTime @default(now()) @db.DateTime2
+
+  @@index([partnerId, article])
+  @@index([address])
+  @@map("StorageMovements")
+}
+
+model Shipment {
+  id          Int            @id @default(autoincrement())
+  requestId   Int
+  method      String         @db.NVarChar(20) // SELF | PARTNER
+  vehicleInfo String?        @db.NVarChar(255)
+  driverName  String?        @db.NVarChar(255)
+  plannedDate DateTime?      @db.DateTime2
+  shippedAt   DateTime?      @db.DateTime2
+  shippedBy   String?        @db.NVarChar(255)
+  comment     String?        @db.NVarChar(Max)
+  createdAt   DateTime       @default(now()) @db.DateTime2
+  request     PartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  items       ShipmentItem[]
+
+  @@index([requestId])
+  @@map("Shipments")
+}
+
+model ShipmentItem {
+  id         Int      @id @default(autoincrement())
+  shipmentId Int
+  article    String   @db.NVarChar(100)
+  name       String?  @db.NVarChar(500)
+  quantity   Int
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@map("ShipmentItems")
+}
+
+model WarehouseDocument {
+  id        Int            @id @default(autoincrement())
+  requestId Int
+  type      String         @db.NVarChar(20) // MX1 | TORG2 | TTN | MX3
+  number    String         @db.NVarChar(100)
+  data      String         @db.NVarChar(Max) // JSON-снимок данных на момент формирования
+  createdBy String         @db.NVarChar(255)
+  createdAt DateTime       @default(now()) @db.DateTime2
+  request   PartnerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("WarehouseDocuments")
 }
 
 model ItemOperationExecution {
