@@ -1,11 +1,11 @@
 package com.npp.tsd
 
 import android.content.Context
-import com.npp.tsd.data.SettingsRepository
-import com.npp.tsd.data.repo.RequestsRepository
-import com.npp.tsd.data.repo.WarehouseRepository
+import com.npp.tsd.core.data.RequestsRepository
+import com.npp.tsd.core.data.SettingsRepository
+import com.npp.tsd.core.data.WarehouseRepository
 
-/** Простой ручной DI-контейнер: один экземпляр на приложение. */
+/** Композиционный корень: единственное место, где создаются репозитории. */
 class AppContainer(context: Context) {
     val settingsRepository = SettingsRepository(context.applicationContext)
     val requestsRepository = RequestsRepository(settingsRepository)

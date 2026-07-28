@@ -7,8 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.npp.tsd.core.designsystem.theme.TsdTheme
 import com.npp.tsd.ui.AppNav
-import com.npp.tsd.ui.theme.TsdTheme
 
 class MainActivity : ComponentActivity() {
 
