@@ -1,7 +1,6 @@
 package com.npp.tsd.feature.requests.detail
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,14 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.MoveToInbox
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,7 +39,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.npp.tsd.core.data.RequestsRepository
 import com.npp.tsd.core.designsystem.UiState
 import com.npp.tsd.core.designsystem.component.AppCard
-import com.npp.tsd.core.designsystem.component.AppTopBar
 import com.npp.tsd.core.designsystem.component.EmptyState
 import com.npp.tsd.core.designsystem.component.FullScreenError
 import com.npp.tsd.core.designsystem.component.FullScreenLoading
@@ -55,17 +47,17 @@ import com.npp.tsd.core.designsystem.theme.Spacing
 import com.npp.tsd.core.model.RequestItemDetailed
 import com.npp.tsd.core.model.RequestStatus
 
+/**
+ * Вкладка «Обзор» рабочего пространства заявки: статус, готовность операций,
+ * список позиций. Приёмка/Хранение/Отгрузка/Документы — соседние вкладки
+ * нижнего меню, задаются контейнером-workspace в :app.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RequestDetailScreen(
+fun RequestOverviewScreen(
     requestId: Int,
     requestsRepository: RequestsRepository,
-    onBack: () -> Unit,
     onOpenItem: (Int) -> Unit,
-    onOpenReceiving: (Int) -> Unit,
-    onOpenStorage: (Int) -> Unit,
-    onOpenShipping: (Int) -> Unit,
-    onOpenDocuments: (Int) -> Unit,
 ) {
     val vm: RequestDetailViewModel = viewModel(
         factory = viewModelFactory { initializer { RequestDetailViewModel(requestsRepository) } },
@@ -73,17 +65,7 @@ fun RequestDetailScreen(
     LaunchedEffect(requestId) { vm.load(requestId) }
     val state by vm.state.collectAsState()
 
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = when (val s = state) {
-                    is UiState.Success -> "Заявка № ${s.data.number}"
-                    else -> "Заявка"
-                },
-                onBack = onBack,
-            )
-        },
-    ) { padding ->
+    Scaffold { padding ->
         when (val s = state) {
             is UiState.Loading -> FullScreenLoading(Modifier.padding(padding))
 
@@ -121,35 +103,6 @@ fun RequestDetailScreen(
                             progress = { request.progress / 100f },
                             modifier = Modifier.fillMaxWidth().height(8.dp).padding(top = Spacing.xs),
                         )
-
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(top = Spacing.md),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        ) {
-                            AssistChip(
-                                onClick = { onOpenReceiving(requestId) },
-                                label = { Text("Приёмка") },
-                                leadingIcon = { Icon(Icons.Filled.MoveToInbox, contentDescription = null, modifier = Modifier.height(18.dp)) },
-                            )
-                            AssistChip(
-                                onClick = { onOpenStorage(requestId) },
-                                label = { Text("Хранение") },
-                                leadingIcon = { Icon(Icons.Filled.Inventory2, contentDescription = null, modifier = Modifier.height(18.dp)) },
-                            )
-                            AssistChip(
-                                onClick = { onOpenShipping(requestId) },
-                                label = { Text("Отгрузка") },
-                                leadingIcon = { Icon(Icons.Filled.LocalShipping, contentDescription = null, modifier = Modifier.height(18.dp)) },
-                            )
-                            AssistChip(
-                                onClick = { onOpenDocuments(requestId) },
-                                label = { Text("Документы") },
-                                leadingIcon = { Icon(Icons.Filled.Description, contentDescription = null, modifier = Modifier.height(18.dp)) },
-                            )
-                        }
                     }
 
                     if (request.items.isEmpty()) {

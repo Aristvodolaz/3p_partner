@@ -23,34 +23,26 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.npp.tsd.AppContainer
-import com.npp.tsd.feature.documents.DocumentsScreen
-import com.npp.tsd.feature.receiving.ReceivingScreen
-import com.npp.tsd.feature.requests.detail.RequestDetailScreen
 import com.npp.tsd.feature.requests.itemdetail.ItemDetailScreen
 import com.npp.tsd.feature.requests.list.RequestsListScreen
 import com.npp.tsd.feature.settings.SettingsScreen
-import com.npp.tsd.feature.shipping.ShippingScreen
 import com.npp.tsd.feature.storage.StorageLookupScreen
-import com.npp.tsd.feature.storage.StorageScreen
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 private object Routes {
     const val REQUESTS = "requests"
     const val STORAGE_LOOKUP = "storage_lookup"
     const val SETTINGS = "settings"
 
-    const val REQUEST_DETAIL = "requests/{requestId}"
-    const val ITEM_DETAIL = "requests/{requestId}/items/{itemId}"
-    const val RECEIVING = "requests/{requestId}/receiving"
-    const val REQUEST_STORAGE = "requests/{requestId}/storage"
-    const val SHIPPING = "requests/{requestId}/shipping"
-    const val DOCUMENTS = "requests/{requestId}/documents"
+    const val REQUEST_WORKSPACE = "requests/{requestId}/{requestNumber}"
+    const val ITEM_DETAIL = "requests/{requestId}/{requestNumber}/items/{itemId}"
 
-    fun requestDetail(id: Int) = "requests/$id"
-    fun itemDetail(requestId: Int, itemId: Int) = "requests/$requestId/items/$itemId"
-    fun receiving(id: Int) = "requests/$id/receiving"
-    fun requestStorage(id: Int) = "requests/$id/storage"
-    fun shipping(id: Int) = "requests/$id/shipping"
-    fun documents(id: Int) = "requests/$id/documents"
+    fun requestWorkspace(id: Int, number: String) =
+        "requests/$id/${URLEncoder.encode(number, "UTF-8")}"
+
+    fun itemDetail(requestId: Int, requestNumber: String, itemId: Int) =
+        "requests/$requestId/${URLEncoder.encode(requestNumber, "UTF-8")}/items/$itemId"
 }
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
@@ -100,7 +92,7 @@ fun AppNav(container: AppContainer) {
             composable(Routes.REQUESTS) {
                 RequestsListScreen(
                     requestsRepository = container.requestsRepository,
-                    onOpenRequest = { navController.navigate(Routes.requestDetail(it)) },
+                    onOpenRequest = { id, number -> navController.navigate(Routes.requestWorkspace(id, number)) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
             }
@@ -116,20 +108,26 @@ fun AppNav(container: AppContainer) {
                 )
             }
 
+            // Рабочее пространство заявки: Обзор/Приёмка/Хранение/Отгрузка/Документы
+            // переключаются собственным нижним меню внутри RequestWorkspaceScreen.
             composable(
-                Routes.REQUEST_DETAIL,
-                arguments = listOf(navArgument("requestId") { type = NavType.IntType }),
+                Routes.REQUEST_WORKSPACE,
+                arguments = listOf(
+                    navArgument("requestId") { type = NavType.IntType },
+                    navArgument("requestNumber") { type = NavType.StringType },
+                ),
             ) { backStackEntry ->
                 val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                RequestDetailScreen(
+                val requestNumber = backStackEntry.arguments?.getString("requestNumber")
+                    ?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
+                RequestWorkspaceScreen(
                     requestId = requestId,
-                    requestsRepository = container.requestsRepository,
+                    requestNumber = requestNumber,
+                    container = container,
                     onBack = { navController.popBackStack() },
-                    onOpenItem = { itemId -> navController.navigate(Routes.itemDetail(requestId, itemId)) },
-                    onOpenReceiving = { navController.navigate(Routes.receiving(requestId)) },
-                    onOpenStorage = { navController.navigate(Routes.requestStorage(requestId)) },
-                    onOpenShipping = { navController.navigate(Routes.shipping(requestId)) },
-                    onOpenDocuments = { navController.navigate(Routes.documents(requestId)) },
+                    onOpenItem = { itemId ->
+                        navController.navigate(Routes.itemDetail(requestId, requestNumber, itemId))
+                    },
                 )
             }
 
@@ -137,6 +135,7 @@ fun AppNav(container: AppContainer) {
                 Routes.ITEM_DETAIL,
                 arguments = listOf(
                     navArgument("requestId") { type = NavType.IntType },
+                    navArgument("requestNumber") { type = NavType.StringType },
                     navArgument("itemId") { type = NavType.IntType },
                 ),
             ) { backStackEntry ->
@@ -146,57 +145,6 @@ fun AppNav(container: AppContainer) {
                     requestId = requestId,
                     itemId = itemId,
                     requestsRepository = container.requestsRepository,
-                    onBack = { navController.popBackStack() },
-                )
-            }
-
-            composable(
-                Routes.RECEIVING,
-                arguments = listOf(navArgument("requestId") { type = NavType.IntType }),
-            ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                ReceivingScreen(
-                    requestId = requestId,
-                    requestsRepository = container.requestsRepository,
-                    warehouseRepository = container.warehouseRepository,
-                    onBack = { navController.popBackStack() },
-                )
-            }
-
-            composable(
-                Routes.REQUEST_STORAGE,
-                arguments = listOf(navArgument("requestId") { type = NavType.IntType }),
-            ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                StorageScreen(
-                    requestId = requestId,
-                    requestsRepository = container.requestsRepository,
-                    warehouseRepository = container.warehouseRepository,
-                    onBack = { navController.popBackStack() },
-                )
-            }
-
-            composable(
-                Routes.SHIPPING,
-                arguments = listOf(navArgument("requestId") { type = NavType.IntType }),
-            ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                ShippingScreen(
-                    requestId = requestId,
-                    requestsRepository = container.requestsRepository,
-                    warehouseRepository = container.warehouseRepository,
-                    onBack = { navController.popBackStack() },
-                )
-            }
-
-            composable(
-                Routes.DOCUMENTS,
-                arguments = listOf(navArgument("requestId") { type = NavType.IntType }),
-            ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                DocumentsScreen(
-                    requestId = requestId,
-                    warehouseRepository = container.warehouseRepository,
                     onBack = { navController.popBackStack() },
                 )
             }

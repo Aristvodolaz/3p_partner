@@ -25,7 +25,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.npp.tsd.core.data.WarehouseRepository
 import com.npp.tsd.core.designsystem.UiState
 import com.npp.tsd.core.designsystem.component.AppCard
-import com.npp.tsd.core.designsystem.component.AppTopBar
 import com.npp.tsd.core.designsystem.component.EmptyState
 import com.npp.tsd.core.designsystem.component.FullScreenError
 import com.npp.tsd.core.designsystem.component.FullScreenLoading
@@ -38,7 +37,6 @@ import com.npp.tsd.core.model.WarehouseDocument
 fun DocumentsScreen(
     requestId: Int,
     warehouseRepository: WarehouseRepository,
-    onBack: () -> Unit,
 ) {
     val vm: DocumentsViewModel = viewModel(
         factory = viewModelFactory { initializer { DocumentsViewModel(warehouseRepository) } },
@@ -46,9 +44,7 @@ fun DocumentsScreen(
     LaunchedEffect(requestId) { vm.load(requestId) }
     val state by vm.state.collectAsState()
 
-    Scaffold(
-        topBar = { AppTopBar(title = "Документы по заявке", onBack = onBack) },
-    ) { padding ->
+    Scaffold { padding ->
         when (val s = state) {
             is UiState.Loading -> FullScreenLoading(Modifier.padding(padding))
 

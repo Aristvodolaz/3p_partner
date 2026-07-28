@@ -51,7 +51,7 @@ import com.npp.tsd.core.model.RequestStatus
 @Composable
 fun RequestsListScreen(
     requestsRepository: RequestsRepository,
-    onOpenRequest: (Int) -> Unit,
+    onOpenRequest: (Int, String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val vm: RequestsListViewModel = viewModel(
@@ -119,7 +119,7 @@ fun RequestsListScreen(
                     } else {
                         LazyColumn(contentPadding = PaddingValues(Spacing.md)) {
                             items(s.data, key = { it.id }) { request ->
-                                RequestRow(request, onClick = { onOpenRequest(request.id) })
+                                RequestRow(request, onClick = { onOpenRequest(request.id, request.number) })
                             }
                         }
                     }

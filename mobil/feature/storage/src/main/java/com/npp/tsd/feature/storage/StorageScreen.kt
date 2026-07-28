@@ -37,7 +37,6 @@ import com.npp.tsd.core.data.RequestsRepository
 import com.npp.tsd.core.data.WarehouseRepository
 import com.npp.tsd.core.designsystem.UiState
 import com.npp.tsd.core.designsystem.component.AppCard
-import com.npp.tsd.core.designsystem.component.AppTopBar
 import com.npp.tsd.core.designsystem.component.EmptyState
 import com.npp.tsd.core.designsystem.component.FullScreenError
 import com.npp.tsd.core.designsystem.component.FullScreenLoading
@@ -53,7 +52,6 @@ fun StorageScreen(
     requestId: Int,
     requestsRepository: RequestsRepository,
     warehouseRepository: WarehouseRepository,
-    onBack: () -> Unit,
 ) {
     val vm: StorageViewModel = viewModel(
         factory = viewModelFactory {
@@ -77,7 +75,6 @@ fun StorageScreen(
     var dialogTarget by remember { mutableStateOf<Pair<RequestItemDetailed, StorageAction>?>(null) }
 
     Scaffold(
-        topBar = { AppTopBar(title = "Хранение", onBack = onBack) },
         snackbarHost = { SnackbarHost(snackbarHost) },
     ) { padding ->
         when (val s = state) {
