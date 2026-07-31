@@ -241,15 +241,22 @@ export function RequestsPage() {
   );
 }
 
+// Цвета соответствуют RequestStatus.colorHex в мобильном приложении
+// (core:model/Models.kt) — один и тот же статус должен выглядеть одинаково
+// на вебе и в приложении ТСД.
+const STATUS_STYLES: Record<string, string> = {
+  Запланировано: 'bg-gray-100 text-gray-600',
+  Приёмка: 'bg-purple-50 text-purple-700',
+  Хранение: 'bg-sky-50 text-sky-700',
+  'В работе': 'bg-blue-50 text-blue-700',
+  Готово: 'bg-green-50 text-green-700',
+  Отгружено: 'bg-teal-50 text-teal-700',
+  Закрыто: 'bg-gray-200 text-gray-700',
+  Дефект: 'bg-red-50 text-red-600',
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const cls =
-    status === 'Выполнена'
-      ? 'bg-green-50 text-green-700'
-      : status === 'В обработке'
-        ? 'bg-blue-50 text-blue-700'
-        : status === 'Отменена'
-          ? 'bg-red-50 text-red-600'
-          : 'bg-gray-100 text-gray-600';
+  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600';
   return (
     <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}>
       {status}

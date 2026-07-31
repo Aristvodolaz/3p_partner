@@ -46,11 +46,22 @@ export interface RequestFormData {
   items: RequestItemInput[];
 }
 
+/**
+ * Жизненный цикл заявки: Запланировано → Приёмка → Хранение → В работе →
+ * Готово → Отгружено → Закрыто. «Дефект» — отдельный статус для претензии/
+ * брака вне основной линейки. Должен совпадать с backend/src/common/
+ * request-status.ts и mobil RequestStatus (core:model/Models.kt) —
+ * это общая модель для веба, бэкенда и мобильного приложения.
+ */
 export const REQUEST_STATUSES = [
-  'Новая',
-  'В обработке',
-  'Выполнена',
-  'Отменена',
+  'Запланировано',
+  'Приёмка',
+  'Хранение',
+  'В работе',
+  'Готово',
+  'Отгружено',
+  'Закрыто',
+  'Дефект',
 ] as const;
 
 export function requestTotal(request: PartnerRequest): number {
