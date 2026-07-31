@@ -13,10 +13,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -51,6 +53,7 @@ import com.npp.tsd.core.model.DiscrepancyType
 import com.npp.tsd.core.model.Receipt
 import com.npp.tsd.core.model.ReceiptItemBody
 import com.npp.tsd.core.model.ReceiptType
+import com.npp.tsd.core.model.ReceivingSummaryItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,14 +90,14 @@ fun ReceivingScreen(
             is UiState.Error -> FullScreenError(message = s.message, modifier = Modifier.padding(padding))
 
             is UiState.Success -> {
-                val request = s.data
+                val summary = s.data
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentPadding = PaddingValues(Spacing.lg),
                 ) {
                     item {
                         NewReceiptForm(
-                            items = request.items.map { it.article to (it.name ?: it.article) to it.quantity },
+                            summary = summary,
                             saving = saving,
                             onSubmit = { type, receivedBy, items -> vm.submitReceipt(type, receivedBy, items) },
                         )
@@ -122,9 +125,12 @@ fun ReceivingScreen(
 }
 
 private data class ReceiptRow(
+    val requestItemId: Int,
     val article: String,
     val name: String,
     val expectedQty: Int,
+    val receivedQty: Int,
+    val remainingQty: Int,
     var acceptedQty: String,
     var discrepancyType: String?,
     var discrepancyComment: String,
@@ -132,22 +138,55 @@ private data class ReceiptRow(
 
 @Composable
 private fun NewReceiptForm(
-    items: List<Pair<Pair<String, String>, Int>>,
+    summary: List<ReceivingSummaryItem>,
     saving: Boolean,
     onSubmit: (type: String, receivedBy: String, items: List<ReceiptItemBody>) -> Unit,
 ) {
+    val fullyReceived = summary.filter { it.fullyReceived }
+    val pending = summary.filter { !it.fullyReceived }
+
     var type by remember { mutableStateOf(ReceiptType.BOX) }
     var receivedBy by remember { mutableStateOf("") }
-    val rows = remember(items) {
-        items.map { (info, qty) ->
-            ReceiptRow(info.first, info.second, qty, qty.toString(), null, "")
+    // Значение по умолчанию — то, что реально осталось принять, а не полное
+    // заявленное количество: заявка может приниматься в несколько заходов.
+    val rows = remember(pending) {
+        pending.map { s ->
+            ReceiptRow(
+                requestItemId = s.requestItemId,
+                article = s.article,
+                name = s.name ?: s.article,
+                expectedQty = s.expectedQty,
+                receivedQty = s.receivedQty,
+                remainingQty = s.remainingQty,
+                acceptedQty = s.remainingQty.toString(),
+                discrepancyType = null,
+                discrepancyComment = "",
+            )
         }.toMutableStateList()
     }
 
     Column {
         Text("Новая приёмка", style = MaterialTheme.typography.titleMedium)
 
-        Row(Modifier.fillMaxWidth().padding(top = Spacing.sm), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        if (fullyReceived.isNotEmpty()) {
+            Text(
+                "Уже принято полностью",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.md),
+            )
+            fullyReceived.forEach { FullyReceivedRow(it) }
+        }
+
+        if (pending.isEmpty()) {
+            EmptyState(
+                message = "Все позиции по заявке уже приняты полностью",
+                icon = Icons.Filled.CheckCircle,
+            )
+            return@Column
+        }
+
+        Row(Modifier.fillMaxWidth().padding(top = Spacing.md), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             ReceiptType.ALL.forEach { t ->
                 FilterChip(
                     selected = type == t,
@@ -165,7 +204,11 @@ private fun NewReceiptForm(
             singleLine = true,
         )
 
-        Text("Позиции по заявке", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = Spacing.md))
+        Text(
+            "Позиции к приёмке",
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(top = Spacing.md),
+        )
         rows.forEach { row ->
             ReceiptItemRow(row)
         }
@@ -173,13 +216,15 @@ private fun NewReceiptForm(
         Button(
             enabled = !saving && receivedBy.isNotBlank(),
             onClick = {
-                val bodies = rows.map {
-                    val accepted = it.acceptedQty.toIntOrNull() ?: 0
+                val bodies = rows.mapNotNull {
+                    val accepted = (it.acceptedQty.toIntOrNull() ?: 0).coerceIn(0, it.remainingQty)
+                    if (accepted <= 0) return@mapNotNull null
                     ReceiptItemBody(
+                        requestItemId = it.requestItemId,
                         article = it.article,
-                        expectedQty = it.expectedQty,
+                        expectedQty = it.remainingQty,
                         acceptedQty = accepted,
-                        discrepancyType = if (accepted != it.expectedQty) it.discrepancyType else null,
+                        discrepancyType = if (accepted != it.remainingQty) it.discrepancyType else null,
                         discrepancyComment = it.discrepancyComment.ifBlank { null },
                     )
                 }
@@ -193,32 +238,72 @@ private fun NewReceiptForm(
 }
 
 @Composable
+private fun FullyReceivedRow(item: ReceivingSummaryItem) {
+    AppCard(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+        contentPadding = PaddingValues(Spacing.sm),
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("${item.article} — ${item.name ?: item.article}", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Принято ${item.receivedQty} из ${item.expectedQty}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = "Принято полностью",
+                tint = MaterialTheme.colorScheme.tertiary,
+            )
+        }
+    }
+}
+
+@Composable
 private fun ReceiptItemRow(row: ReceiptRow) {
     var acceptedQty by remember { mutableStateOf(row.acceptedQty) }
     var discrepancyType by remember { mutableStateOf(row.discrepancyType) }
     var comment by remember { mutableStateOf(row.discrepancyComment) }
-    val hasDiscrepancy = acceptedQty.toIntOrNull() != row.expectedQty
+    val acceptedNum = acceptedQty.toIntOrNull()
+    val hasDiscrepancy = acceptedNum != row.remainingQty
+    val overLimit = acceptedNum != null && acceptedNum > row.remainingQty
 
     AppCard(
         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
         contentPadding = PaddingValues(Spacing.sm),
     ) {
         Text("${row.article} — ${row.name}", style = MaterialTheme.typography.bodyMedium)
+        Text(
+            if (row.receivedQty > 0) {
+                "Заявлено: ${row.expectedQty} · принято ранее: ${row.receivedQty} · осталось: ${row.remainingQty}"
+            } else {
+                "Заявлено: ${row.expectedQty}"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(
             Modifier.fillMaxWidth().padding(top = Spacing.xs),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Заявлено: ${row.expectedQty}")
             OutlinedTextField(
                 value = acceptedQty,
-                onValueChange = {
-                    acceptedQty = it.filter(Char::isDigit)
-                    row.acceptedQty = acceptedQty
+                onValueChange = { input ->
+                    // Не даём ввести больше, чем реально осталось принять по позиции —
+                    // сервер всё равно отклонит превышение, но лучше не доводить до ошибки.
+                    val digits = input.filter(Char::isDigit)
+                    val capped = digits.toIntOrNull()?.coerceIn(0, row.remainingQty)?.toString() ?: digits
+                    acceptedQty = capped
+                    row.acceptedQty = capped
                 },
-                label = { Text("Принято") },
+                label = { Text("Принять сейчас") },
+                supportingText = { Text("Осталось принять: ${row.remainingQty}") },
+                isError = overLimit,
                 singleLine = true,
-                modifier = Modifier.width(110.dp),
+                modifier = Modifier.width(160.dp),
             )
         }
 

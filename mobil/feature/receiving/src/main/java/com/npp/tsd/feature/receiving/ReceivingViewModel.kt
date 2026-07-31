@@ -6,7 +6,7 @@ import com.npp.tsd.core.network.friendlyMessage
 import com.npp.tsd.core.model.CreateReceiptBody
 import com.npp.tsd.core.model.Receipt
 import com.npp.tsd.core.model.ReceiptItemBody
-import com.npp.tsd.core.model.RequestDetailed
+import com.npp.tsd.core.model.ReceivingSummaryItem
 import com.npp.tsd.core.data.RequestsRepository
 import com.npp.tsd.core.data.WarehouseRepository
 import com.npp.tsd.core.designsystem.UiState
@@ -20,8 +20,8 @@ class ReceivingViewModel(
     private val warehouseRepo: WarehouseRepository,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<UiState<RequestDetailed>>(UiState.Loading)
-    val state: StateFlow<UiState<RequestDetailed>> = _state.asStateFlow()
+    private val _state = MutableStateFlow<UiState<List<ReceivingSummaryItem>>>(UiState.Loading)
+    val state: StateFlow<UiState<List<ReceivingSummaryItem>>> = _state.asStateFlow()
 
     private val _receipts = MutableStateFlow<List<Receipt>>(emptyList())
     val receipts: StateFlow<List<Receipt>> = _receipts.asStateFlow()
@@ -44,7 +44,12 @@ class ReceivingViewModel(
 
     private suspend fun fetch() {
         try {
-            _state.value = UiState.Success(requestsRepo.getRequestDetailed(requestId))
+            // requestsRepo.getRequestDetailed заранее гарантирует, что заявка
+            // существует (даёт понятную ошибку, если нет), сама сводка идёт из
+            // /receiving/summary — там же заявлено/принято/осталось по позициям.
+            requestsRepo.getRequestDetailed(requestId)
+            val summary = warehouseRepo.getReceivingSummary(requestId)
+            _state.value = UiState.Success(summary)
             _receipts.value = warehouseRepo.getReceipts(requestId)
         } catch (e: Exception) {
             _state.value = UiState.Error(e.friendlyMessage("Не удалось загрузить данные"))

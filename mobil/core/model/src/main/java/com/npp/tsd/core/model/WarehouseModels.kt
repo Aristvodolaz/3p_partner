@@ -16,6 +16,23 @@ data class ReceiptItem(
     val discrepancyComment: String? = null,
 )
 
+/**
+ * Сводка по позиции заявки: сколько заявлено, сколько уже принято
+ * (по всем прошлым приёмкам) и сколько осталось. Используется, чтобы не
+ * показывать и не позволять повторно принимать уже полностью принятые
+ * позиции — сервер и так это отклонит, но UI не должен вводить в заблуждение.
+ */
+@Serializable
+data class ReceivingSummaryItem(
+    val requestItemId: Int,
+    val article: String,
+    val name: String? = null,
+    val expectedQty: Int,
+    val receivedQty: Int,
+    val remainingQty: Int,
+    val fullyReceived: Boolean,
+)
+
 @Serializable
 data class Receipt(
     val id: Int,

@@ -10,6 +10,7 @@ import com.npp.tsd.core.model.MoveItemBody
 import com.npp.tsd.core.model.PartnerRequest
 import com.npp.tsd.core.model.PlaceItemBody
 import com.npp.tsd.core.model.Receipt
+import com.npp.tsd.core.model.ReceivingSummaryItem
 import com.npp.tsd.core.model.RemoveItemBody
 import com.npp.tsd.core.model.RequestDetailed
 import com.npp.tsd.core.model.RequestItem
@@ -63,6 +64,9 @@ interface TsdApi {
 
     @GET("receiving")
     suspend fun getReceipts(@Query("requestId") requestId: Int): List<Receipt>
+
+    @GET("receiving/summary")
+    suspend fun getReceivingSummary(@Query("requestId") requestId: Int): List<ReceivingSummaryItem>
 
     @POST("receiving")
     suspend fun createReceipt(@Body body: CreateReceiptBody): Receipt

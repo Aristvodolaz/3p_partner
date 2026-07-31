@@ -14,6 +14,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -26,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import com.npp.tsd.AppContainer
 import com.npp.tsd.feature.documents.DocumentsScreen
 import com.npp.tsd.feature.receiving.ReceivingScreen
@@ -36,7 +38,9 @@ import com.npp.tsd.feature.storage.StorageScreen
 private enum class WorkspaceTab(val label: String, val icon: ImageVector) {
     OVERVIEW("Обзор", Icons.AutoMirrored.Filled.ListAlt),
     RECEIVING("Приёмка", Icons.Filled.MoveToInbox),
-    STORAGE("Хранение", Icons.Filled.Inventory2),
+    // "Склад", а не "Хранение" — тот же термин, что и в верхнем нижнем меню
+    // (вкладка "Склад"), плюс короче и не переносится на 5 вкладках.
+    STORAGE("Склад", Icons.Filled.Inventory2),
     SHIPPING("Отгрузка", Icons.Filled.LocalShipping),
     DOCUMENTS("Документы", Icons.Filled.Description),
 }
@@ -75,7 +79,14 @@ fun RequestWorkspaceScreen(
                         selected = tab == t,
                         onClick = { tab = t },
                         icon = { Icon(t.icon, contentDescription = t.label) },
-                        label = { Text(t.label) },
+                        label = {
+                            Text(
+                                t.label,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
                     )
                 }
             }

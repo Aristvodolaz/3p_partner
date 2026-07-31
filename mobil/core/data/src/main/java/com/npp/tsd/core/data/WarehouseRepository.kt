@@ -15,6 +15,7 @@ class WarehouseRepository(private val settings: SettingsRepository) {
 
     // Приёмка
     suspend fun getReceipts(requestId: Int) = api().getReceipts(requestId)
+    suspend fun getReceivingSummary(requestId: Int) = api().getReceivingSummary(requestId)
     suspend fun createReceipt(body: CreateReceiptBody) = api().createReceipt(body)
     suspend fun createReceiptDocument(receiptId: Int, type: String) =
         api().createReceiptDocument(receiptId, CreateDocumentBody(type))

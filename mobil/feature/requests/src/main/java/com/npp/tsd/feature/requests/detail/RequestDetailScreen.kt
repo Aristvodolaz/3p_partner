@@ -166,12 +166,6 @@ private fun ItemRow(item: RequestItemDetailed, onClick: () -> Unit) {
             Text("${item.opsDone}/${item.opsTotal} операций", style = MaterialTheme.typography.bodySmall)
         }
         Text(item.name ?: "—", style = MaterialTheme.typography.bodyMedium)
-        if (item.opsTotal > 0) {
-            LinearProgressIndicator(
-                progress = { item.opsDone.toFloat() / item.opsTotal },
-                modifier = Modifier.fillMaxWidth().height(4.dp).padding(top = Spacing.xs),
-            )
-        }
         Row(
             Modifier.fillMaxWidth().padding(top = Spacing.sm),
             horizontalArrangement = Arrangement.SpaceBetween,

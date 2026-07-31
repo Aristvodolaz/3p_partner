@@ -21,6 +21,14 @@ export class ReceivingController {
     return this.receivingService.findByRequest(requestId);
   }
 
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Сводка по позициям заявки: заявлено/принято/осталось принять',
+  })
+  getSummary(@Query('requestId', ParseIntPipe) requestId: number) {
+    return this.receivingService.getSummary(requestId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Приёмка с позициями' })
   findOne(@Param('id', ParseIntPipe) id: number) {
