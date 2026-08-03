@@ -72,8 +72,8 @@ export function PartnerCard({ partner }: Props) {
         </div>
 
         <div className="space-y-2 text-sm">
-          <InfoRow icon={<FileText size={14} />} label="ИНН" value={partner.inn} />
-          <InfoRow icon={<FileText size={14} />} label="Договор" value={partner.contractNumber} />
+          <InfoRow icon={<FileText size={14} />} label="ИНН" value={partner.inn} mono />
+          <InfoRow icon={<FileText size={14} />} label="Договор" value={partner.contractNumber} mono />
           <InfoRow icon={<User size={14} />} label="Контакт" value={partner.contactPerson} />
           <InfoRow icon={<Phone size={14} />} label="Телефон" value={partner.phone} />
           <InfoRow icon={<Mail size={14} />} label="Email" value={partner.email} />
@@ -164,17 +164,21 @@ function InfoRow({
   label,
   value,
   clamp,
+  mono,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   clamp?: boolean;
+  mono?: boolean;
 }) {
   return (
     <div className="flex items-start gap-2 text-gray-600">
       <span className="flex-shrink-0 mt-0.5 text-gray-400">{icon}</span>
       <span className="text-gray-400 w-16 flex-shrink-0">{label}</span>
-      <span className={`text-gray-700 ${clamp ? 'line-clamp-2' : ''}`}>{value}</span>
+      <span className={`text-gray-700 ${clamp ? 'line-clamp-2' : ''} ${mono ? 'font-mono text-[13px]' : ''}`}>
+        {value}
+      </span>
     </div>
   );
 }

@@ -51,7 +51,7 @@ export function ActsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Акты выполненных услуг</h1>
+        <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Акты выполненных услуг</h1>
         <p className="text-sm text-gray-500 mt-1">
           Расчёт стоимости по заявке, по запросу партнёра или за месяц
         </p>

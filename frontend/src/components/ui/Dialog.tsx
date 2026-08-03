@@ -51,17 +51,19 @@ export function Dialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-fade-in"
         onClick={requestClose}
       />
       <div
         className={cn(
-          'relative bg-white rounded-2xl shadow-2xl w-full flex flex-col max-h-[90vh]',
+          'relative bg-white rounded-2xl shadow-panel ring-1 ring-gray-900/5 w-full flex flex-col max-h-[90vh] animate-scale-in',
           sizeClass,
         )}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <h2 className="font-display text-lg font-semibold text-gray-900 tracking-tight">
+            {title}
+          </h2>
           <div className="flex items-center gap-2">
             {headerActions}
             <button

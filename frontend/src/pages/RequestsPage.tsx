@@ -72,7 +72,7 @@ export function RequestsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Заявки партнёров</h1>
+          <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Заявки партнёров</h1>
           <p className="text-sm text-gray-500 mt-1">
             {data?.total
               ? `${data.total} заяв${data.total === 1 ? 'ка' : data.total < 5 ? 'ки' : 'ок'}`
@@ -158,7 +158,7 @@ export function RequestsPage() {
                   const unknown = hasUnknownArticles(req);
                   return (
                     <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-3 font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
                         {req.number}
                         {unknown && (
                           <span
@@ -174,7 +174,7 @@ export function RequestsPage() {
                         {req.requestDate ? formatDateShort(req.requestDate) : '—'}
                       </td>
                       <td className="px-4 py-3 text-center">{req.items.length}</td>
-                      <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
+                      <td className="px-4 py-3 text-right font-mono text-[13px] font-medium tabular-nums whitespace-nowrap">
                         {total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -246,20 +246,22 @@ export function RequestsPage() {
 // (core:model/Models.kt) — один и тот же статус должен выглядеть одинаково
 // на вебе и в приложении ТСД.
 const STATUS_STYLES: Record<string, string> = {
-  Запланировано: 'bg-gray-100 text-gray-600',
-  Приёмка: 'bg-purple-50 text-purple-700',
-  Хранение: 'bg-sky-50 text-sky-700',
-  'В работе': 'bg-blue-50 text-blue-700',
-  Готово: 'bg-green-50 text-green-700',
-  Отгружено: 'bg-teal-50 text-teal-700',
-  Закрыто: 'bg-gray-200 text-gray-700',
-  Дефект: 'bg-red-50 text-red-600',
+  Запланировано: 'bg-gray-100 text-gray-600 ring-gray-500/10',
+  Приёмка: 'bg-purple-50 text-purple-700 ring-purple-600/15',
+  Хранение: 'bg-sky-50 text-sky-700 ring-sky-600/15',
+  'В работе': 'bg-blue-50 text-blue-700 ring-blue-600/15',
+  Готово: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
+  Отгружено: 'bg-teal-50 text-teal-700 ring-teal-600/15',
+  Закрыто: 'bg-gray-200 text-gray-700 ring-gray-500/10',
+  Дефект: 'bg-red-50 text-red-600 ring-red-600/15',
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600';
+  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600 ring-gray-500/10';
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ring-1 ring-inset ${cls}`}
+    >
       {status}
     </span>
   );

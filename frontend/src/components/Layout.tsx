@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  Building2,
   Users,
   Package,
   Coins,
@@ -35,16 +34,20 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Building2 size={16} className="text-white" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary-900/20">
+                <span className="font-display font-semibold text-white text-[15px] leading-none">
+                  3P
+                </span>
               </div>
-              <div>
-                <span className="font-semibold text-gray-900">3P Partner</span>
-                <span className="text-gray-400 text-sm ml-2">НПП</span>
+              <div className="leading-none">
+                <span className="font-display font-semibold text-gray-900 text-[15px] tracking-tight">
+                  Partner
+                </span>
+                <span className="text-gray-400 text-xs ml-2 align-middle">НПП</span>
               </div>
             </div>
             <nav className="flex items-center gap-1">
@@ -54,15 +57,22 @@ export function Layout() {
                   to={to}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                       isActive
-                        ? 'bg-primary-50 text-primary'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+                        ? 'text-primary'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/80',
                     )
                   }
                 >
-                  <Icon size={16} />
-                  <span className="hidden sm:inline">{label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <span className="absolute inset-0 rounded-lg bg-primary-50 animate-scale-in" />
+                      )}
+                      <Icon size={16} className="relative" />
+                      <span className="relative hidden sm:inline">{label}</span>
+                    </>
+                  )}
                 </NavLink>
               ))}
             </nav>
@@ -71,7 +81,7 @@ export function Layout() {
                 <div className="text-sm font-medium text-gray-900 leading-tight">
                   {employee?.fullName}
                 </div>
-                <div className="text-xs text-gray-400 leading-tight">
+                <div className="text-xs text-gray-400 leading-tight tracking-wide uppercase">
                   {employee?.role ?? 'роль не назначена'}
                 </div>
               </div>
@@ -87,7 +97,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
         <Outlet />
       </main>
     </div>

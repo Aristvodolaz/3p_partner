@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Building2, LogIn } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
@@ -27,42 +27,73 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-3">
-            <Building2 size={22} className="text-white" />
+    <div className="relative min-h-screen flex items-center justify-center bg-gray-900 px-4 overflow-hidden">
+      {/* Атмосферный фон: тёплый навy-градиент + тонкая сетка */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(1100px 600px at 15% -10%, #1B4F8A 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #163F6E 0%, transparent 55%), #17140F',
+        }}
+      />
+      <div
+        className="absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}
+      />
+
+      <div className="relative w-full max-w-sm animate-fade-in-up">
+        <div className="flex flex-col items-center mb-9 text-center">
+          <span className="font-display text-4xl font-semibold text-white tracking-tight">
+            3P Partner
+          </span>
+          <div className="flex items-center gap-2 mt-2.5">
+            <span className="h-px w-6 bg-accent-500/70" />
+            <span className="text-white/50 text-xs tracking-[0.2em] uppercase">ТСД · Офис</span>
+            <span className="h-px w-6 bg-accent-500/70" />
           </div>
-          <span className="font-semibold text-gray-900 text-lg">3P Partner</span>
-          <span className="text-gray-400 text-sm">НПП</span>
         </div>
 
-        <div className="card p-6">
-          <h1 className="text-base font-semibold text-gray-900 mb-1">Вход</h1>
-          <p className="text-sm text-gray-500 mb-4">
-            Введите табельный номер / ШК сотрудника
+        <div className="card p-7 shadow-panel">
+          <h1 className="font-display text-xl font-semibold text-gray-900 mb-1 tracking-tight">
+            Вход в систему
+          </h1>
+          <p className="text-sm text-gray-500 mb-5">
+            Введите табельный номер или ШК сотрудника
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Табельный номер / ШК сотрудника</label>
+              <label className="label">Табельный номер / ШК</label>
               <input
                 autoFocus
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 placeholder="Например, 10234"
-                className="input"
+                className="input font-mono tracking-wide"
               />
             </div>
             <button
               type="submit"
               disabled={isLoading || !employeeId.trim()}
-              className="btn-primary w-full justify-center"
+              className="btn-primary w-full justify-center group"
             >
-              <LogIn size={16} />
               {isLoading ? 'Вход...' : 'Войти'}
+              {!isLoading && (
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
+              )}
             </button>
           </form>
         </div>
+
+        <p className="text-center text-xs text-white/30 mt-6">
+          3P Partner — внутренняя система обработки заявок НПП
+        </p>
       </div>
     </div>
   );
