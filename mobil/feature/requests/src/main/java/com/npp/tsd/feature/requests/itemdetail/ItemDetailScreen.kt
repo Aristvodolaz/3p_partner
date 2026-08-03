@@ -54,6 +54,7 @@ fun ItemDetailScreen(
     itemId: Int,
     requestsRepository: RequestsRepository,
     onBack: () -> Unit,
+    onOpenPacking: () -> Unit = {},
 ) {
     val vm: ItemDetailViewModel = viewModel(
         factory = viewModelFactory { initializer { ItemDetailViewModel(requestsRepository) } },
@@ -81,7 +82,12 @@ fun ItemDetailScreen(
             is UiState.Success -> {
                 val item = s.data
                 Column(Modifier.fillMaxSize().padding(padding)) {
-                    ItemHeader(item, saving, onSaveFact = { qty, article -> vm.saveFact(qty, article) })
+                    ItemHeader(
+                        item,
+                        saving,
+                        onSaveFact = { qty, article -> vm.saveFact(qty, article) },
+                        onOpenPacking = onOpenPacking,
+                    )
 
                     if (item.sku == null) {
                         EmptyState(
@@ -128,6 +134,7 @@ private fun ItemHeader(
     item: RequestItemDetailed,
     saving: Boolean,
     onSaveFact: (Int?, String?) -> Unit,
+    onOpenPacking: () -> Unit = {},
 ) {
     var factQty by remember(item.id) { mutableStateOf(item.factQuantity?.toString() ?: "") }
     var actualArticle by remember(item.id) { mutableStateOf(item.actualArticle ?: "") }
@@ -158,12 +165,16 @@ private fun ItemHeader(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        Button(
-            enabled = !saving,
-            onClick = { onSaveFact(factQty.toIntOrNull(), actualArticle.ifBlank { null }) },
-            modifier = Modifier.padding(top = Spacing.sm),
-        ) {
-            Text(if (saving) "Сохранение..." else "Сохранить факт")
+        Row(Modifier.padding(top = Spacing.sm), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Button(
+                enabled = !saving,
+                onClick = { onSaveFact(factQty.toIntOrNull(), actualArticle.ifBlank { null }) },
+            ) {
+                Text(if (saving) "Сохранение..." else "Сохранить факт")
+            }
+            if (item.sku != null) {
+                TextButton(onClick = onOpenPacking) { Text("Упаковка") }
+            }
         }
     }
 }

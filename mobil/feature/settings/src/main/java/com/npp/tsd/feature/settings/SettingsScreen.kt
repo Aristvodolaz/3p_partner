@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,7 +36,10 @@ import com.npp.tsd.core.designsystem.theme.Spacing
 @Composable
 fun SettingsScreen(
     settingsRepository: SettingsRepository,
+    employeeName: String? = null,
+    employeeRole: String? = null,
     onBack: () -> Unit,
+    onLogout: () -> Unit = {},
 ) {
     val vm: SettingsViewModel = viewModel(
         factory = viewModelFactory { initializer { SettingsViewModel(settingsRepository) } },
@@ -79,6 +86,24 @@ fun SettingsScreen(
                         modifier = Modifier.padding(end = 2.dp),
                     )
                     Text("Сохранено", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            if (employeeName != null) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.md))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    Icon(Icons.Filled.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text("Сотрудник", style = MaterialTheme.typography.titleMedium)
+                }
+                Text(employeeName, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    employeeRole ?: "роль не назначена",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(onClick = onLogout, modifier = Modifier.padding(top = Spacing.sm)) {
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.padding(end = Spacing.xs))
+                    Text("Выйти")
                 }
             }
         }

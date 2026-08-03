@@ -32,6 +32,7 @@ import type {
 import { hasUnknownArticles, REQUEST_STATUSES, requestTotal } from '@/types/request';
 import { formatDateShort } from '@/lib/utils';
 import type { Partner } from '@/types/partner';
+import { usePackingUnits } from '@/hooks/usePacking';
 
 export function RequestsPage() {
   const [partnerId, setPartnerId] = useState<number | undefined>(undefined);
@@ -725,6 +726,8 @@ function RequestEditDialog({
           </div>
         </div>
 
+        <PackingUnitsSection requestId={request.id} />
+
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
           <button
             type="button"
@@ -745,5 +748,45 @@ function RequestEditDialog({
         </div>
       </div>
     </Dialog>
+  );
+}
+
+/** Только просмотр — паллеты/короба создаются на мобильном приложении (пол склада) */
+function PackingUnitsSection({ requestId }: { requestId: number }) {
+  const { data: units, isLoading } = usePackingUnits(requestId);
+
+  if (isLoading || !units || units.length === 0) return null;
+
+  return (
+    <div className="border-t border-gray-100 pt-3">
+      <h4 className="text-sm font-medium text-gray-700 mb-2">
+        Упаковка: паллеты и короба ({units.length})
+      </h4>
+      <div className="space-y-2">
+        {units.map((u) => (
+          <div key={u.id} className="card p-2.5 text-xs flex items-start justify-between gap-3">
+            <div>
+              <span className="font-medium text-gray-800">
+                {u.type === 'PALLET' ? 'Паллета' : 'Короб'} · {u.code}
+              </span>
+              {u.parentPalletId && (
+                <span className="text-gray-400 ml-2">→ паллета #{u.parentPalletId}</span>
+              )}
+              <div className="text-gray-500 mt-0.5">
+                {u.items.map((i) => `${i.article}: ${i.quantity} шт.`).join(', ') || 'позиции не добавлены'}
+              </div>
+              {u.expiryDate && (
+                <div className="text-gray-400">Срок годности: {formatDateShort(u.expiryDate)}</div>
+              )}
+            </div>
+            <span
+              className={`badge ${u.status === 'COMPLETED' ? 'badge-green' : 'badge-gray'} whitespace-nowrap`}
+            >
+              {u.status === 'COMPLETED' ? 'Завершена' : 'В работе'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

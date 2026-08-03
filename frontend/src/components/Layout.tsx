@@ -1,15 +1,38 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { Building2, Users, Package, Coins, ClipboardList } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import {
+  Building2,
+  Users,
+  Package,
+  Coins,
+  ClipboardList,
+  UserCog,
+  FileSpreadsheet,
+  LogOut,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
-const navItems = [
+const NPP_NAV = [{ to: '/requests', label: 'Заявки', icon: ClipboardList }];
+
+const NRP_NAV = [
   { to: '/partners', label: 'Партнёры', icon: Users },
   { to: '/skus', label: 'Справочник SKU', icon: Package },
   { to: '/tariffs', label: 'Тарифы', icon: Coins },
   { to: '/requests', label: 'Заявки', icon: ClipboardList },
+  { to: '/acts', label: 'Акты', icon: FileSpreadsheet },
+  { to: '/employees', label: 'Сотрудники', icon: UserCog },
 ];
 
 export function Layout() {
+  const { employee, logout } = useAuth();
+  const navigate = useNavigate();
+  const navItems = employee?.role === 'НРП' ? NRP_NAV : NPP_NAV;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -43,6 +66,23 @@ export function Layout() {
                 </NavLink>
               ))}
             </nav>
+            <div className="flex items-center gap-3 pl-3 ml-2 border-l border-gray-200">
+              <div className="hidden sm:block text-right">
+                <div className="text-sm font-medium text-gray-900 leading-tight">
+                  {employee?.fullName}
+                </div>
+                <div className="text-xs text-gray-400 leading-tight">
+                  {employee?.role ?? 'роль не назначена'}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="btn-ghost text-xs p-2"
+                title="Выйти"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </header>

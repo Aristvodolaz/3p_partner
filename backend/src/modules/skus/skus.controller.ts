@@ -29,6 +29,7 @@ import { SetPartnerTariffsDto } from './dto/partner-tariffs.dto';
 import { QuerySkuDto } from './dto/query-sku.dto';
 import { UpdateSkuDto } from './dto/update-sku.dto';
 import { SkusService, UPLOADS_DIR } from './skus.service';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 const photoStorage = diskStorage({
   destination: UPLOADS_DIR,
@@ -39,6 +40,7 @@ const photoStorage = diskStorage({
 });
 
 @ApiTags('Справочник SKU')
+@Roles('НРП')
 @Controller('skus')
 export class SkusController {
   constructor(private readonly skusService: SkusService) {}

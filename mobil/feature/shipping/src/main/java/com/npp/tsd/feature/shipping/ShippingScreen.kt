@@ -57,6 +57,7 @@ fun ShippingScreen(
     requestId: Int,
     requestsRepository: RequestsRepository,
     warehouseRepository: WarehouseRepository,
+    employeeName: String,
 ) {
     val vm: ShippingViewModel = viewModel(
         factory = viewModelFactory {
@@ -126,9 +127,10 @@ fun ShippingScreen(
     shipDialogTarget?.let { shipment ->
         MarkShippedDialog(
             saving = saving,
+            employeeName = employeeName,
             onDismiss = { shipDialogTarget = null },
-            onConfirm = { shippedBy ->
-                vm.markShipped(shipment.id, shippedBy)
+            onConfirm = {
+                vm.markShipped(shipment.id, employeeName)
                 shipDialogTarget = null
             },
         )
@@ -239,22 +241,18 @@ private fun ShipmentCard(
 }
 
 @Composable
-private fun MarkShippedDialog(saving: Boolean, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var shippedBy by remember { mutableStateOf("") }
+private fun MarkShippedDialog(
+    saving: Boolean,
+    employeeName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Отметить отгруженной") },
-        text = {
-            OutlinedTextField(
-                value = shippedBy,
-                onValueChange = { shippedBy = it },
-                label = { Text("Кто отгрузил") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
+        text = { Text("Отгрузил: $employeeName") },
         confirmButton = {
-            TextButton(enabled = !saving && shippedBy.isNotBlank(), onClick = { onConfirm(shippedBy) }) {
+            TextButton(enabled = !saving, onClick = onConfirm) {
                 Text("Подтвердить")
             }
         },

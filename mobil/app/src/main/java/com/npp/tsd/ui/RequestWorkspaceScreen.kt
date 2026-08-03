@@ -56,6 +56,7 @@ fun RequestWorkspaceScreen(
     requestId: Int,
     requestNumber: String,
     container: AppContainer,
+    employeeName: String,
     onBack: () -> Unit,
     onOpenItem: (Int) -> Unit,
 ) {
@@ -104,6 +105,7 @@ fun RequestWorkspaceScreen(
                     requestId = requestId,
                     requestsRepository = container.requestsRepository,
                     warehouseRepository = container.warehouseRepository,
+                    employeeName = employeeName,
                 )
 
                 WorkspaceTab.STORAGE -> StorageScreen(
@@ -116,6 +118,7 @@ fun RequestWorkspaceScreen(
                     requestId = requestId,
                     requestsRepository = container.requestsRepository,
                     warehouseRepository = container.warehouseRepository,
+                    employeeName = employeeName,
                 )
 
                 WorkspaceTab.DOCUMENTS -> DocumentsScreen(

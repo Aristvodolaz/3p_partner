@@ -25,6 +25,7 @@ model Partner {
   tariffs        PartnerTariff[]
   tariffHistory  TariffHistory[]
   requests       PartnerRequest[]
+  acts           Act[]
 
   @@map("Partners")
 }
@@ -65,6 +66,8 @@ model RequestItem {
   sku           Sku?                     @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   executions    ItemOperationExecution[]
   receiptItems  ReceiptItem[]
+  packingUnits  PackingUnit[]
+  packingUnitItems PackingUnitItem[]
 
   @@index([requestId])
   @@map("RequestItems")
@@ -251,6 +254,7 @@ model Sku {
   palletQuant        Int?
   packCostUnit       Decimal?       @db.Decimal(10, 2)
   packCostBox        Decimal?       @db.Decimal(10, 2)
+  allowMixedBox      Boolean        @default(false)
   createdAt          DateTime       @default(now()) @db.DateTime2
   updatedAt          DateTime       @updatedAt @db.DateTime2
   partner            Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
@@ -283,6 +287,84 @@ model SkuPhoto {
 
   @@index([skuId])
   @@map("SkuPhotos")
+}
+
+model PackingUnit {
+  id            Int               @id @default(autoincrement())
+  requestItemId Int
+  type          String            @db.NVarChar(10) // BOX | PALLET
+  code          String            @db.NVarChar(100) // ШК ВПС / номер паллеты
+  parentPalletId Int?
+  expiryDate    DateTime?         @db.DateTime2
+  nestingQty    Int?
+  status        String            @default("IN_PROGRESS") @db.NVarChar(20) // IN_PROGRESS | COMPLETED
+  createdBy     String            @db.NVarChar(255)
+  createdAt     DateTime          @default(now()) @db.DateTime2
+  completedAt   DateTime?         @db.DateTime2
+  item          RequestItem       @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
+  parentPallet  PackingUnit?      @relation("PalletBoxes", fields: [parentPalletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  boxes         PackingUnit[]     @relation("PalletBoxes")
+  items         PackingUnitItem[]
+
+  @@index([requestItemId])
+  @@index([parentPalletId])
+  @@map("PackingUnits")
+}
+
+model PackingUnitItem {
+  id            Int         @id @default(autoincrement())
+  packingUnitId Int
+  requestItemId Int
+  article       String      @db.NVarChar(100)
+  quantity      Int
+  isDefect      Boolean     @default(false)
+  comment       String?     @db.NVarChar(Max)
+  packingUnit   PackingUnit @relation(fields: [packingUnitId], references: [id], onDelete: Cascade)
+  requestItem   RequestItem @relation(fields: [requestItemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([packingUnitId])
+  @@map("PackingUnitItems")
+}
+
+model Act {
+  id           Int           @id @default(autoincrement())
+  partnerId    Int
+  type         String        @db.NVarChar(20) // REQUEST | ON_DEMAND | MONTHLY
+  periodLabel  String?       @db.NVarChar(20) // напр. "2026-08" для MONTHLY
+  totalAmount  Decimal       @db.Decimal(14, 2)
+  data         String        @db.NVarChar(Max) // JSON-снимок построчной разбивки
+  createdBy    String        @db.NVarChar(255)
+  createdAt    DateTime      @default(now()) @db.DateTime2
+  partner      Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  requests     ActRequest[]
+
+  @@index([partnerId])
+  @@map("Acts")
+}
+
+model ActRequest {
+  id            Int      @id @default(autoincrement())
+  actId         Int
+  requestId     Int
+  requestNumber String   @db.NVarChar(100)
+  amount        Decimal  @db.Decimal(14, 2)
+  act           Act      @relation(fields: [actId], references: [id], onDelete: Cascade)
+
+  @@index([actId])
+  @@map("ActRequests")
+}
+
+model Employee {
+  id         Int       @id @default(autoincrement())
+  employeeId String    @unique @db.NVarChar(50) // ШК / табельный номер сотрудника во внешней системе
+  fullName   String    @db.NVarChar(255)
+  role       String?   @db.NVarChar(10) // НПП | НРП | null (не назначена)
+  isActive   Boolean   @default(true)
+  lastLogin  DateTime? @db.DateTime2
+  createdAt  DateTime  @default(now()) @db.DateTime2
+  updatedAt  DateTime  @updatedAt @db.DateTime2
+
+  @@map("Employees")
 }
 
 model PartnerHistory {

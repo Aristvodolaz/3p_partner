@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.npp.tsd.core.designsystem.theme.TsdTheme
 import com.npp.tsd.ui.AppNav
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
@@ -19,10 +20,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         container = AppContainer(this)
 
+        // Разовая блокирующая загрузка сохранённой сессии — нужна синхронно,
+        // до первого построения навиграфа, чтобы сразу выбрать стартовый экран.
+        val initialEmployee = runBlocking {
+            container.authRepository.restoreSession()
+            container.authRepository.currentEmployee()
+        }
+
         setContent {
             TsdTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AppNav(container)
+                    AppNav(container, initialEmployee)
                 }
             }
         }

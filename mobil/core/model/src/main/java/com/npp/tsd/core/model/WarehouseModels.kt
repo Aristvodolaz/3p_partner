@@ -144,6 +144,47 @@ object ShipmentMethod {
     }
 }
 
+// --- Обработка: паллеты и короба ---
+
+@Serializable
+data class PackingUnitItem(
+    val id: Int,
+    val packingUnitId: Int,
+    val requestItemId: Int,
+    val article: String,
+    val quantity: Int,
+    val isDefect: Boolean = false,
+    val comment: String? = null,
+)
+
+@Serializable
+data class PackingUnit(
+    val id: Int,
+    val requestItemId: Int,
+    val type: String,
+    val code: String,
+    val parentPalletId: Int? = null,
+    val expiryDate: String? = null,
+    val nestingQty: Int? = null,
+    val status: String,
+    val createdBy: String,
+    val createdAt: String,
+    val completedAt: String? = null,
+    val items: List<PackingUnitItem> = emptyList(),
+    val boxes: List<PackingUnit> = emptyList(),
+)
+
+object PackingUnitType {
+    const val BOX = "BOX"
+    const val PALLET = "PALLET"
+    val ALL = listOf(PALLET, BOX)
+    fun label(code: String) = when (code) {
+        PALLET -> "Паллета"
+        BOX -> "Короб"
+        else -> code
+    }
+}
+
 // --- Документы ---
 
 @Serializable

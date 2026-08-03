@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore by preferencesDataStore(name = "tsd_settings")
+internal val Context.dataStore by preferencesDataStore(name = "tsd_settings")
 
 const val DEFAULT_BASE_URL = "http://10.171.12.36:3032/api/v1/"
 

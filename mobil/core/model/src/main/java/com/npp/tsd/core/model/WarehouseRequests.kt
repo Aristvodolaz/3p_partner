@@ -73,3 +73,31 @@ data class CreateShipmentBody(
 
 @Serializable
 data class MarkShippedBody(val shippedBy: String)
+
+@Serializable
+data class CreatePackingUnitBody(
+    val requestItemId: Int,
+    val type: String,
+    val code: String? = null,
+    val expiryDate: String? = null,
+    val nestingQty: Int? = null,
+)
+
+@Serializable
+data class AddPackingUnitItemBody(
+    val requestItemId: Int,
+    val article: String,
+    val quantity: Int,
+    val isDefect: Boolean? = null,
+    val comment: String? = null,
+)
+
+@Serializable
+data class UpdatePackingUnitBody(
+    val expiryDate: String? = null,
+    val nestingQty: Int? = null,
+    val status: String? = null,
+)
+
+@Serializable
+data class BindParentPalletBody(val parentPalletId: Int)

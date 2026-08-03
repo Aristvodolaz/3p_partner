@@ -1,7 +1,9 @@
 package com.npp.tsd
 
 import android.content.Context
+import com.npp.tsd.core.data.AuthRepository
 import com.npp.tsd.core.data.RequestsRepository
+import com.npp.tsd.core.data.SessionRepository
 import com.npp.tsd.core.data.SettingsRepository
 import com.npp.tsd.core.data.WarehouseRepository
 
@@ -10,4 +12,6 @@ class AppContainer(context: Context) {
     val settingsRepository = SettingsRepository(context.applicationContext)
     val requestsRepository = RequestsRepository(settingsRepository)
     val warehouseRepository = WarehouseRepository(settingsRepository)
+    val sessionRepository = SessionRepository(context.applicationContext)
+    val authRepository = AuthRepository(settingsRepository, sessionRepository)
 }

@@ -16,8 +16,10 @@ import {
   UpdateOperationDto,
 } from './dto/import-tariffs.dto';
 import { SkusService } from './skus.service';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Тарифы по операциям')
+@Roles('НРП')
 @Controller('tariffs')
 export class TariffsController {
   constructor(private readonly skusService: SkusService) {}

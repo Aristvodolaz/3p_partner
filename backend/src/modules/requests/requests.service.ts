@@ -28,6 +28,7 @@ const requestDetailInclude = {
           name: true,
           sumOfSides: true,
           specialMarks: true,
+          allowMixedBox: true,
           operations: { include: { operation: true } },
         },
       },

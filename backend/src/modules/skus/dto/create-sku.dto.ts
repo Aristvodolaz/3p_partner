@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -106,6 +107,11 @@ export class CreateSkuDto {
   @Type(() => Number)
   @IsNumber()
   packCostBox?: number;
+
+  @ApiPropertyOptional({ description: 'Разрешить микс разных артикулов в одном коробе при упаковке' })
+  @IsOptional()
+  @IsBoolean()
+  allowMixedBox?: boolean;
 
   @ApiPropertyOptional({ type: [SkuOperationDto], description: 'Операции по SKU' })
   @IsOptional()

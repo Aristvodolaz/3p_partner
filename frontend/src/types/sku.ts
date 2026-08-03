@@ -48,6 +48,7 @@ export interface Sku {
   palletQuant: number | null;
   packCostUnit: string | null;
   packCostBox: string | null;
+  allowMixedBox: boolean;
   createdAt: string;
   updatedAt: string;
   operations: SkuOperation[];
@@ -121,6 +122,7 @@ export interface SkuFormData {
   palletQuant?: number | null;
   packCostUnit?: number | null;
   packCostBox?: number | null;
+  allowMixedBox?: boolean;
   operations?: SkuOperationInput[];
 }
 

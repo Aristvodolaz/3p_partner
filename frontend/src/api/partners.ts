@@ -1,21 +1,12 @@
-import axios from 'axios';
 import type {
   Partner,
   PartnerFormData,
   PartnerHistory,
   PartnersResponse,
 } from '@/types/partner';
+import { createApiClient } from '@/lib/apiClient';
 
-const api = axios.create({ baseURL: '/api/v1' });
-
-api.interceptors.response.use(
-  (r) => r,
-  (err) => {
-    const message =
-      err.response?.data?.message ?? err.message ?? 'Неизвестная ошибка';
-    return Promise.reject(new Error(Array.isArray(message) ? message.join('; ') : message));
-  },
-);
+const api = createApiClient();
 
 export interface QueryParams {
   search?: string;

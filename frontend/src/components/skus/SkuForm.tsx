@@ -113,6 +113,7 @@ export function SkuForm({
   );
   const [marks, setMarks] = useState<string[]>(initialMarks);
   const [customMark, setCustomMark] = useState('');
+  const [allowMixedBox, setAllowMixedBox] = useState(defaultValues?.allowMixedBox ?? false);
 
   // Отслеживание несохранённых изменений: RHF-поля + отметки + операции
   const initialMarksKey = useMemo(() => [...initialMarks].sort().join('|'), [initialMarks]);
@@ -132,9 +133,11 @@ export function SkuForm({
       .sort()
       .join('|') !== initialOpsKey;
 
+  const mixedBoxDirty = allowMixedBox !== (defaultValues?.allowMixedBox ?? false);
+
   useEffect(() => {
-    onDirtyChange?.(isDirty || marksDirty || opsDirty);
-  }, [isDirty, marksDirty, opsDirty, onDirtyChange]);
+    onDirtyChange?.(isDirty || marksDirty || opsDirty || mixedBoxDirty);
+  }, [isDirty, marksDirty, opsDirty, mixedBoxDirty, onDirtyChange]);
 
   const toggleOp = (code: string) => {
     setSelectedOps((prev) => {
@@ -178,6 +181,7 @@ export function SkuForm({
       packCostBox: numOrUndef(values.packCostBox) ?? null,
       clientRequirements: values.clientRequirements?.trim() || null,
       specialMarks: marks.length ? marks.join(', ') : null,
+      allowMixedBox,
       operations: Array.from(selectedOps.entries()).map(([code, value]) => ({
         code,
         value: value.trim() || '1',
@@ -251,6 +255,19 @@ export function SkuForm({
         <div>
           <label className="label">Квант паллетный</label>
           <input {...register('palletQuant')} placeholder="120" inputMode="numeric" className="input" />
+        </div>
+
+        <div className="flex items-center gap-2 sm:col-span-2">
+          <input
+            id="allowMixedBox"
+            type="checkbox"
+            checked={allowMixedBox}
+            onChange={(e) => setAllowMixedBox(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="allowMixedBox" className="text-sm text-gray-700">
+            Разрешить микс разных артикулов в одном коробе при упаковке
+          </label>
         </div>
 
         <div>

@@ -80,6 +80,7 @@ data class SkuDetail(
     val name: String,
     val sumOfSides: String? = null,
     val specialMarks: String? = null,
+    val allowMixedBox: Boolean = false,
     val operations: List<SkuOperationDetail> = emptyList(),
 )
 

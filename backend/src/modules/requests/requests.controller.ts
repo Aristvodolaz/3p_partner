@@ -24,6 +24,8 @@ import {
   UpdateRequestDto,
 } from './dto/create-request.dto';
 import { RequestsService } from './requests.service';
+import { CurrentEmployee } from '../../common/decorators/current-employee.decorator';
+import { CurrentEmployeeInfo } from '../../common/guards/jwt-auth.guard';
 
 class QueryRequestDto {
   @ApiPropertyOptional({ description: 'ID партнёра' })
@@ -113,8 +115,9 @@ export class RequestsController {
     @Param('itemId', ParseIntPipe) itemId: number,
     @Param('operationId', ParseIntPipe) operationId: number,
     @Body() dto: ExecuteOperationDto,
+    @CurrentEmployee() employee: CurrentEmployeeInfo,
   ) {
-    return this.requestsService.executeOperation(itemId, operationId, dto);
+    return this.requestsService.executeOperation(itemId, operationId, dto, employee.fullName);
   }
 
   @Patch('items/:itemId/fact')

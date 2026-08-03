@@ -61,6 +61,7 @@ fun ReceivingScreen(
     requestId: Int,
     requestsRepository: RequestsRepository,
     warehouseRepository: WarehouseRepository,
+    employeeName: String,
 ) {
     val vm: ReceivingViewModel = viewModel(
         factory = viewModelFactory {
@@ -99,7 +100,8 @@ fun ReceivingScreen(
                         NewReceiptForm(
                             summary = summary,
                             saving = saving,
-                            onSubmit = { type, receivedBy, items -> vm.submitReceipt(type, receivedBy, items) },
+                            employeeName = employeeName,
+                            onSubmit = { type, items -> vm.submitReceipt(type, employeeName, items) },
                         )
                     }
                     item {
@@ -140,13 +142,13 @@ private data class ReceiptRow(
 private fun NewReceiptForm(
     summary: List<ReceivingSummaryItem>,
     saving: Boolean,
-    onSubmit: (type: String, receivedBy: String, items: List<ReceiptItemBody>) -> Unit,
+    employeeName: String,
+    onSubmit: (type: String, items: List<ReceiptItemBody>) -> Unit,
 ) {
     val fullyReceived = summary.filter { it.fullyReceived }
     val pending = summary.filter { !it.fullyReceived }
 
     var type by remember { mutableStateOf(ReceiptType.BOX) }
-    var receivedBy by remember { mutableStateOf("") }
     // Значение по умолчанию — то, что реально осталось принять, а не полное
     // заявленное количество: заявка может приниматься в несколько заходов.
     val rows = remember(pending) {
@@ -196,12 +198,10 @@ private fun NewReceiptForm(
             }
         }
 
-        OutlinedTextField(
-            value = receivedBy,
-            onValueChange = { receivedBy = it },
-            label = { Text("Кто принял") },
-            modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
-            singleLine = true,
+        Text(
+            "Принял: $employeeName",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = Spacing.sm),
         )
 
         Text(
@@ -214,7 +214,7 @@ private fun NewReceiptForm(
         }
 
         Button(
-            enabled = !saving && receivedBy.isNotBlank(),
+            enabled = !saving,
             onClick = {
                 val bodies = rows.mapNotNull {
                     val accepted = (it.acceptedQty.toIntOrNull() ?: 0).coerceIn(0, it.remainingQty)
@@ -228,7 +228,7 @@ private fun NewReceiptForm(
                         discrepancyComment = it.discrepancyComment.ifBlank { null },
                     )
                 }
-                onSubmit(type, receivedBy, bodies)
+                onSubmit(type, bodies)
             },
             modifier = Modifier.padding(top = Spacing.sm),
         ) {

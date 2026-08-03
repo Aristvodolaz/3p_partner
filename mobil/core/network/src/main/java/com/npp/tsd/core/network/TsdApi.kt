@@ -1,16 +1,22 @@
 package com.npp.tsd.core.network
 
+import com.npp.tsd.core.model.AddPackingUnitItemBody
+import com.npp.tsd.core.model.BindParentPalletBody
 import com.npp.tsd.core.model.CreateDocumentBody
+import com.npp.tsd.core.model.CreatePackingUnitBody
 import com.npp.tsd.core.model.CreateReceiptBody
 import com.npp.tsd.core.model.CreateShipmentBody
 import com.npp.tsd.core.model.ExecuteOperationBody
 import com.npp.tsd.core.model.ItemExecution
+import com.npp.tsd.core.model.LoginBody
+import com.npp.tsd.core.model.LoginResponse
 import com.npp.tsd.core.model.MarkShippedBody
 import com.npp.tsd.core.model.MoveItemBody
 import com.npp.tsd.core.model.PartnerRequest
 import com.npp.tsd.core.model.PlaceItemBody
 import com.npp.tsd.core.model.Receipt
 import com.npp.tsd.core.model.ReceivingSummaryItem
+import com.npp.tsd.core.model.PackingUnit
 import com.npp.tsd.core.model.RemoveItemBody
 import com.npp.tsd.core.model.RequestDetailed
 import com.npp.tsd.core.model.RequestItem
@@ -20,6 +26,7 @@ import com.npp.tsd.core.model.StorageBalanceByAddress
 import com.npp.tsd.core.model.StorageBalanceByArticle
 import com.npp.tsd.core.model.StorageMovement
 import com.npp.tsd.core.model.UpdateItemFactBody
+import com.npp.tsd.core.model.UpdatePackingUnitBody
 import com.npp.tsd.core.model.UpdateStatusBody
 import com.npp.tsd.core.model.WarehouseDocument
 import retrofit2.http.Body
@@ -30,6 +37,9 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TsdApi {
+
+    @POST("auth/login")
+    suspend fun login(@Body body: LoginBody): LoginResponse
 
     @GET("requests")
     suspend fun getRequests(
@@ -131,4 +141,30 @@ interface TsdApi {
 
     @GET("documents")
     suspend fun getDocuments(@Query("requestId") requestId: Int): List<WarehouseDocument>
+
+    // --- Обработка: паллеты и короба ---
+
+    @GET("packing/units")
+    suspend fun getPackingUnits(@Query("requestId") requestId: Int): List<PackingUnit>
+
+    @POST("packing/units")
+    suspend fun createPackingUnit(@Body body: CreatePackingUnitBody): PackingUnit
+
+    @POST("packing/units/{id}/items")
+    suspend fun addPackingUnitItem(
+        @Path("id") id: Int,
+        @Body body: AddPackingUnitItemBody,
+    ): PackingUnit
+
+    @PATCH("packing/units/{id}")
+    suspend fun updatePackingUnit(
+        @Path("id") id: Int,
+        @Body body: UpdatePackingUnitBody,
+    ): PackingUnit
+
+    @PATCH("packing/units/{id}/bind-parent")
+    suspend fun bindPackingUnitParent(
+        @Path("id") id: Int,
+        @Body body: BindParentPalletBody,
+    ): PackingUnit
 }
