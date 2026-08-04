@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -52,7 +53,12 @@ fun StorageLookupScreen(warehouseRepository: WarehouseRepository) {
     val history by vm.history.collectAsState()
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("Склад") }) },
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Склад") },
+                windowInsets = WindowInsets(0, 0, 0, 0),
+            )
+        },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             OutlinedTextField(

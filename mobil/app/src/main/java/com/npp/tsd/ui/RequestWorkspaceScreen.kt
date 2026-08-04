@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -80,6 +81,12 @@ fun RequestWorkspaceScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
+                // Реальная область статус-бара уже зарезервирована системой отдельно
+                // (edge-to-edge на этом устройстве отдаёт status bar непрозрачным) —
+                // без обнуления windowInsets панель повторно добавляет свой внутренний
+                // отступ под статус-бар поверх уже занятого места, и шапка становится
+                // заметно выше положенного.
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         bottomBar = {
