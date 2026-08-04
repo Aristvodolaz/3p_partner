@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Search, UserCog } from 'lucide-react';
-import { useEmployees, useUpdateEmployee } from '@/hooks/useEmployees';
+import { useState, type FormEvent } from 'react';
+import { Search, UserCog, UserPlus } from 'lucide-react';
+import { useEmployees, useGrantRole, useUpdateEmployee } from '@/hooks/useEmployees';
 import type { Employee, EmployeeRole } from '@/types/employee';
 
 export function EmployeesPage() {
@@ -20,6 +20,8 @@ export function EmployeesPage() {
           </p>
         </div>
       </div>
+
+      <GrantRoleForm />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1 max-w-md">
@@ -76,6 +78,65 @@ export function EmployeesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function GrantRoleForm() {
+  const [employeeId, setEmployeeId] = useState('');
+  const [role, setRole] = useState<EmployeeRole>('НПП');
+  const grant = useGrantRole();
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = employeeId.trim();
+    if (!trimmed) return;
+    grant.mutate(
+      { employeeId: trimmed, role },
+      { onSuccess: () => setEmployeeId('') },
+    );
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="card p-4 mb-6 flex flex-wrap items-end gap-3"
+    >
+      <div className="flex-1 min-w-[200px]">
+        <label className="block text-xs font-medium text-gray-500 mb-1">
+          Выдать роль по ШК
+        </label>
+        <input
+          type="text"
+          placeholder="Табельный номер / ШК"
+          value={employeeId}
+          onChange={(e) => setEmployeeId(e.target.value)}
+          className="input"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Роль</label>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as EmployeeRole)}
+          className="input"
+        >
+          <option value="НПП">НПП</option>
+          <option value="НРП">НРП</option>
+        </select>
+      </div>
+      <button
+        type="submit"
+        disabled={grant.isPending || !employeeId.trim()}
+        className="btn-primary flex items-center gap-2"
+      >
+        <UserPlus size={16} />
+        Выдать
+      </button>
+      <p className="w-full text-xs text-gray-400">
+        Можно указать ШК сотрудника, который ещё ни разу не входил в систему —
+        роль закрепится за ним заранее, а ФИО подтянется при первом входе
+      </p>
+    </form>
   );
 }
 

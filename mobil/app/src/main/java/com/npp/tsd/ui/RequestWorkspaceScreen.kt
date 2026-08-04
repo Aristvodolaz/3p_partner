@@ -1,8 +1,17 @@
 package com.npp.tsd.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ListAlt
@@ -15,9 +24,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,9 +33,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.npp.tsd.AppContainer
 import com.npp.tsd.feature.documents.DocumentsScreen
 import com.npp.tsd.feature.receiving.ReceivingScreen
@@ -71,26 +81,16 @@ fun RequestWorkspaceScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
+                // Реальная область статус-бара уже зарезервирована системой отдельно
+                // (edge-to-edge на этом устройстве отдаёт status bar непрозрачным) —
+                // без обнуления windowInsets панель повторно добавляет свой внутренний
+                // отступ под статус-бар поверх уже занятого места, и шапка становится
+                // заметно выше положенного.
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
         bottomBar = {
-            NavigationBar {
-                WorkspaceTab.entries.forEach { t ->
-                    NavigationBarItem(
-                        selected = tab == t,
-                        onClick = { tab = t },
-                        icon = { Icon(t.icon, contentDescription = t.label) },
-                        label = {
-                            Text(
-                                t.label,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                    )
-                }
-            }
+            WorkspaceBottomBar(selected = tab, onSelect = { tab = it })
         },
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
@@ -125,6 +125,58 @@ fun RequestWorkspaceScreen(
                     requestId = requestId,
                     warehouseRepository = container.warehouseRepository,
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Компактная нижняя панель вкладок заявки — без встроенных отступов Material3
+ * [androidx.compose.material3.NavigationBar] (там фиксированная высота 80dp,
+ * не сжимаемая через модификаторы).
+ *
+ * Без windowInsetsPadding под системную панель: на части устройств (проверено
+ * на реальном ТСД) `WindowInsets.navigationBars` в этом месте иерархии
+ * возвращает inset заметно больше реальной высоты экранных кнопок навигации —
+ * область под кнопки ОС и так зарезервирована отдельно от контента Scaffold,
+ * повторное резервирование даёт большой пустой отступ снизу панели.
+ */
+@Composable
+private fun WorkspaceBottomBar(selected: WorkspaceTab, onSelect: (WorkspaceTab) -> Unit) {
+    Surface(tonalElevation = 2.dp, shadowElevation = 2.dp) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+        ) {
+            WorkspaceTab.entries.forEach { t ->
+                val isSelected = t == selected
+                val tint = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { onSelect(t) },
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(t.icon, contentDescription = t.label, tint = tint, modifier = Modifier.size(20.dp))
+                    Text(
+                        t.label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tint,
+                    )
+                }
             }
         }
     }

@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { EmployeesService } from './employees.service';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { GrantRoleDto } from './dto/grant-role.dto';
 
 @ApiTags('Сотрудники')
 @Roles('НРП')
@@ -20,5 +21,13 @@ export class EmployeesController {
   @ApiOperation({ summary: 'Назначить роль (НПП/НРП) и/или активность сотрудника' })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEmployeeDto) {
     return this.employeesService.update(id, dto);
+  }
+
+  @Post('grant')
+  @ApiOperation({
+    summary: 'Назначить роль по ШК заранее, даже если сотрудник ещё ни разу не входил',
+  })
+  grant(@Body() dto: GrantRoleDto) {
+    return this.employeesService.grantRole(dto);
   }
 }

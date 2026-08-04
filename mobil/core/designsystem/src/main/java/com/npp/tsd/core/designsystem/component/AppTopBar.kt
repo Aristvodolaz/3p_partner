@@ -1,5 +1,6 @@
 package com.npp.tsd.core.designsystem.component
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -30,5 +31,10 @@ fun AppTopBar(
         },
         actions = { actions() },
         scrollBehavior = scrollBehavior,
+        // Статус-бар на тестовом устройстве уже занимает своё место отдельно от
+        // контента (не edge-to-edge наложение) — без обнуления windowInsets панель
+        // повторно резервирует место под статус-бар внутри себя, и шапка становится
+        // заметно выше положенного.
+        windowInsets = WindowInsets(0, 0, 0, 0),
     )
 }
