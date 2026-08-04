@@ -13,6 +13,15 @@ import {
 } from 'class-validator';
 
 export class RequestItemDto {
+  @ApiPropertyOptional({
+    description:
+      'ID существующей позиции (при редактировании) — без него позиция считается новой',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  id?: number;
+
   @ApiProperty({ description: 'Артикул (из справочника SKU)' })
   @IsString()
   @IsNotEmpty()

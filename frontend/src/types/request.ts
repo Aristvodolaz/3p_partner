@@ -31,6 +31,7 @@ export interface RequestsResponse {
 }
 
 export interface RequestItemInput {
+  id?: number;
   article: string;
   name?: string;
   quantity: number;

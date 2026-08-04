@@ -517,6 +517,7 @@ function RequestEditDialog({
   const [comment, setComment] = useState(request.comment ?? '');
   const [items, setItems] = useState<EditableItem[]>(() =>
     request.items.map((item) => ({
+      id: item.id,
       article: item.article,
       name: item.name ?? undefined,
       quantity: item.quantity,
@@ -554,6 +555,7 @@ function RequestEditDialog({
       status,
       comment: comment || undefined,
       items: items.map((it) => ({
+        id: it.id,
         article: it.article.trim(),
         name: it.name?.trim() || undefined,
         quantity: it.quantity,

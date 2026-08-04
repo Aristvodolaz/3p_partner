@@ -17,11 +17,12 @@ export function exportActToExcel(act: Act) {
 
   for (const r of act.breakdown.requests) {
     for (const item of r.items) {
-      if (item.operations.length === 0) {
+      const operations = item.operations ?? [];
+      if (operations.length === 0) {
         rows.push([r.requestNumber, item.article, item.name ?? '', '—', item.quantity, '', item.totalCost]);
         continue;
       }
-      for (const op of item.operations) {
+      for (const op of operations) {
         rows.push([
           r.requestNumber,
           item.article,
