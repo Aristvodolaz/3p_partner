@@ -14,7 +14,8 @@ export interface ActBreakdownItem {
   quantity: number;
   unitCost: number;
   totalCost: number;
-  operations: ActOperationLine[];
+  // Отсутствует у актов, сформированных до появления детализации по операциям
+  operations?: ActOperationLine[];
 }
 
 export interface ActBreakdownRequest {

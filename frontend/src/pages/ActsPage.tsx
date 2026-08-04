@@ -238,9 +238,10 @@ function ActBreakdownTable({ act }: { act: Act }) {
         <tbody className="divide-y divide-gray-100">
           {act.breakdown.requests.flatMap((r) =>
             r.items.flatMap((item, itemIdx) => {
+              const operations = item.operations ?? [];
               const rows =
-                item.operations.length > 0
-                  ? item.operations.map((op, opIdx) => (
+                operations.length > 0
+                  ? operations.map((op, opIdx) => (
                       <tr key={`${r.requestId}-${itemIdx}-${opIdx}`}>
                         <td className="px-3 py-1.5 text-gray-500">
                           {itemIdx === 0 && opIdx === 0 ? r.requestNumber : ''}

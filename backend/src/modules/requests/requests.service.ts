@@ -265,11 +265,8 @@ export class RequestsService {
       data.partner = { connect: { id: dto.partnerId } };
     }
 
-    // Позиции заменяются целиком, если переданы
     if (dto.items !== undefined) {
-      const ctx = await this.buildCostContext(partnerId);
-      await this.prisma.requestItem.deleteMany({ where: { requestId: id } });
-      data.items = { create: dto.items.map((item) => this.buildItem(item, ctx)) };
+      await this.replaceItems(id, partnerId, request.items, dto.items);
     }
 
     return this.prisma.partnerRequest.update({
@@ -277,6 +274,61 @@ export class RequestsService {
       data,
       include: requestInclude,
     });
+  }
+
+  /**
+   * Позиции сопоставляются по id, а не удаляются-и-пересоздаются целиком:
+   * у позиции может уже быть история приёмки/размещения (ReceiptItem,
+   * PackingUnitItem — там FK на requestItemId стоит NoAction, не Cascade),
+   * и слепой deleteMany+create ронял запрос 500-й из-за нарушения FK,
+   * плюс терял историю выполнения операций (ItemOperationExecution) даже
+   * для позиций, которые пользователь не менял.
+   */
+  private async replaceItems(
+    requestId: number,
+    partnerId: number,
+    existing: { id: number; article: string }[],
+    incoming: RequestItemDto[],
+  ) {
+    const ctx = await this.buildCostContext(partnerId);
+    const incomingIds = new Set(incoming.filter((i) => i.id != null).map((i) => i.id));
+    const toRemove = existing.filter((item) => !incomingIds.has(item.id));
+
+    for (const item of toRemove) {
+      const [receipts, packingRefs] = await Promise.all([
+        this.prisma.receiptItem.count({ where: { requestItemId: item.id } }),
+        this.prisma.packingUnitItem.count({ where: { requestItemId: item.id } }),
+      ]);
+      if (receipts > 0 || packingRefs > 0) {
+        throw new ConflictException(
+          `Нельзя убрать позицию «${item.article}» — по ней уже есть история приёмки или упаковки`,
+        );
+      }
+    }
+
+    await this.prisma.$transaction([
+      ...toRemove.map((item) =>
+        this.prisma.requestItem.delete({ where: { id: item.id } }),
+      ),
+      ...incoming
+        .filter((item): item is RequestItemDto & { id: number } => item.id != null)
+        .map((item) =>
+          this.prisma.requestItem.update({
+            where: { id: item.id },
+            data: this.buildItem(item, ctx),
+          }),
+        ),
+      ...incoming
+        .filter((item) => item.id == null)
+        .map((item) =>
+          this.prisma.requestItem.create({
+            data: {
+              ...this.buildItem(item, ctx),
+              request: { connect: { id: requestId } },
+            },
+          }),
+        ),
+    ]);
   }
 
   async remove(id: number) {
