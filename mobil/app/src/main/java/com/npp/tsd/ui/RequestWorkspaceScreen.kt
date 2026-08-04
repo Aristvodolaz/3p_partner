@@ -5,14 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -129,8 +126,13 @@ fun RequestWorkspaceScreen(
 /**
  * Компактная нижняя панель вкладок заявки — без встроенных отступов Material3
  * [androidx.compose.material3.NavigationBar] (там фиксированная высота 80dp,
- * не сжимаемая через модификаторы). Системный отступ снизу добавляется явно
- * через windowInsetsPadding, поверх него — фиксированная компактная высота.
+ * не сжимаемая через модификаторы).
+ *
+ * Без windowInsetsPadding под системную панель: на части устройств (проверено
+ * на реальном ТСД) `WindowInsets.navigationBars` в этом месте иерархии
+ * возвращает inset заметно больше реальной высоты экранных кнопок навигации —
+ * область под кнопки ОС и так зарезервирована отдельно от контента Scaffold,
+ * повторное резервирование даёт большой пустой отступ снизу панели.
  */
 @Composable
 private fun WorkspaceBottomBar(selected: WorkspaceTab, onSelect: (WorkspaceTab) -> Unit) {
@@ -138,7 +140,6 @@ private fun WorkspaceBottomBar(selected: WorkspaceTab, onSelect: (WorkspaceTab) 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
                 .height(52.dp),
         ) {
             WorkspaceTab.entries.forEach { t ->
