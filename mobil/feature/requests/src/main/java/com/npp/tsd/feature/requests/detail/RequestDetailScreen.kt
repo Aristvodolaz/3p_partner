@@ -167,13 +167,12 @@ private fun ItemRow(item: RequestItemDetailed, onClick: () -> Unit) {
             Text("${item.opsDone}/${item.opsTotal} операций", style = MaterialTheme.typography.bodySmall)
         }
         Text(item.name ?: "—", style = MaterialTheme.typography.bodyMedium)
-        Row(
-            Modifier.fillMaxWidth().padding(top = Spacing.sm),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text("Кол-во: ${item.quantity}" + (item.factQuantity?.let { " (факт: $it)" } ?: ""))
-            item.totalCost?.let { Text("$it ₽") }
-        }
+        // Стоимость обработки — коммерческие данные для НРП на сайте, а не для
+        // исполнителя (кладовщика) на ТСД.
+        Text(
+            "Кол-во: ${item.quantity}" + (item.factQuantity?.let { " (факт: $it)" } ?: ""),
+            modifier = Modifier.padding(top = Spacing.sm),
+        )
         if (item.sku == null) {
             Text(
                 "Артикул не найден в справочнике SKU",
