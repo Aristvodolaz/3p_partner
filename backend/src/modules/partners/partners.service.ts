@@ -156,4 +156,52 @@ export class PartnersService {
       orderBy: { changedAt: 'desc' },
     });
   }
+
+  /**
+   * Полное безвозвратное удаление партнёра и всего связанного (заявки,
+   * SKU, тарифы, акты, история). Большинство FK на Partner — Cascade, но
+   * несколько связей внутри графа заявки нарочно NoAction (чтобы обычное
+   * редактирование позиции не могло тихо снести историю приёмки/упаковки
+   * — см. requests.service.replaceItems), и они блокируют автоматический
+   * каскад. Разрываем их вручную перед тем, как удалить партнёра целиком.
+   */
+  async remove(id: number) {
+    await this.findOne(id);
+
+    const requestIds = (
+      await this.prisma.partnerRequest.findMany({
+        where: { partnerId: id },
+        select: { id: true },
+      })
+    ).map((r) => r.id);
+
+    const itemIds = requestIds.length
+      ? (
+          await this.prisma.requestItem.findMany({
+            where: { requestId: { in: requestIds } },
+            select: { id: true },
+          })
+        ).map((i) => i.id)
+      : [];
+
+    await this.prisma.$transaction([
+      this.prisma.packingUnitItem.deleteMany({
+        where: { requestItemId: { in: itemIds } },
+      }),
+      this.prisma.receiptItem.deleteMany({
+        where: { requestItemId: { in: itemIds } },
+      }),
+      this.prisma.packingUnit.updateMany({
+        where: { requestItemId: { in: itemIds } },
+        data: { parentPalletId: null },
+      }),
+      this.prisma.requestItem.updateMany({
+        where: { id: { in: itemIds } },
+        data: { skuId: null },
+      }),
+      this.prisma.partner.delete({ where: { id } }),
+    ]);
+
+    return { deleted: true };
+  }
 }

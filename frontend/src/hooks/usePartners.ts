@@ -75,3 +75,15 @@ export function useActivatePartner() {
     onError: (err: Error) => toast.error(err.message),
   });
 }
+
+export function useDeletePartner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => partnersApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PARTNERS_KEY });
+      toast.success('Партнёр удалён безвозвратно');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}

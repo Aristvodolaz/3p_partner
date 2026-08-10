@@ -11,6 +11,7 @@ import {
   Power,
   History,
   FileDown,
+  Trash2,
 } from 'lucide-react';
 import type { Partner } from '@/types/partner';
 import { formatDateShort } from '@/lib/utils';
@@ -19,10 +20,12 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Dialog } from '@/components/ui/Dialog';
 import { PartnerForm } from './PartnerForm';
 import { PartnerHistoryDrawer } from './PartnerHistoryDrawer';
+import { DeletePartnerDialog } from './DeletePartnerDialog';
 import {
   useUpdatePartner,
   useDeactivatePartner,
   useActivatePartner,
+  useDeletePartner,
 } from '@/hooks/usePartners';
 import type { PartnerFormData } from '@/types/partner';
 
@@ -34,10 +37,12 @@ export function PartnerCard({ partner }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const update = useUpdatePartner(partner.id);
   const deactivate = useDeactivatePartner();
   const activate = useActivatePartner();
+  const deletePartner = useDeletePartner();
 
   const handleEdit = async (data: PartnerFormData) => {
     await update.mutateAsync(data);
@@ -109,11 +114,19 @@ export function PartnerCard({ partner }: Props) {
             Excel
           </button>
           <button
-            className={`btn-ghost text-xs ml-auto ${partner.isActive ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+            className={`btn-ghost text-xs ${partner.isActive ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
             onClick={() => setConfirmOpen(true)}
           >
             {partner.isActive ? <PowerOff size={14} /> : <Power size={14} />}
             {partner.isActive ? 'Деактивировать' : 'Активировать'}
+          </button>
+          <button
+            className="btn-ghost text-xs ml-auto text-red-600 hover:bg-red-50"
+            onClick={() => setDeleteOpen(true)}
+            title="Удалить безвозвратно"
+          >
+            <Trash2 size={14} />
+            Удалить
           </button>
         </div>
       </div>
@@ -155,6 +168,14 @@ export function PartnerCard({ partner }: Props) {
           onClose={() => setHistoryOpen(false)}
         />
       )}
+
+      <DeletePartnerDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        partnerName={partner.name}
+        loading={deletePartner.isPending}
+        onConfirm={() => deletePartner.mutate(partner.id, { onSuccess: () => setDeleteOpen(false) })}
+      />
     </>
   );
 }

@@ -48,4 +48,9 @@ export const partnersApi = {
     const { data } = await api.get(`/partners/${id}/history`);
     return data;
   },
+
+  remove: async (id: number): Promise<{ deleted: boolean }> => {
+    const { data } = await api.delete(`/partners/${id}`);
+    return data;
+  },
 };
