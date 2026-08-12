@@ -24,7 +24,14 @@ function toInt(v: unknown): number | undefined {
 /** Дата из ячейки: Date (cellDates) или серийный номер Excel → ISO yyyy-mm-dd */
 function toIsoDate(v: unknown): string | undefined {
   if (v instanceof Date && !isNaN(v.getTime())) {
-    return v.toISOString().slice(0, 10);
+    // SheetJS с cellDates:true строит Date из календарной даты ячейки через
+    // ЛОКАЛЬНЫЕ y/m/d — .toISOString() (UTC) в любом часовом поясе восточнее
+    // UTC (Москва, UTC+3) сдвигает дату на день назад. Читаем локальными
+    // геттерами — так получаем ровно ту дату, что закодировал SheetJS.
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, '0');
+    const d = String(v.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
   if (typeof v === 'number' && v > 20000 && v < 80000) {
     const d = new Date(Math.round((v - 25569) * 86400 * 1000));

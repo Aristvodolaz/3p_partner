@@ -56,11 +56,11 @@ export function Dialog({
       />
       <div
         className={cn(
-          'relative bg-white rounded-2xl shadow-panel ring-1 ring-gray-900/5 w-full flex flex-col max-h-[90vh] animate-scale-in',
+          'relative bg-white rounded-2xl shadow-panel ring-1 ring-gray-900/5 w-full flex flex-col max-h-[90vh] overflow-hidden animate-scale-in',
           sizeClass,
         )}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h2 className="font-display text-lg font-semibold text-gray-900 tracking-tight">
             {title}
           </h2>
@@ -74,7 +74,7 @@ export function Dialog({
             </button>
           </div>
         </div>
-        <div className="overflow-y-auto flex-1 px-6 py-4">{children}</div>
+        <div className="overflow-y-auto flex-1 min-h-0 px-6 py-4">{children}</div>
       </div>
     </div>
   );

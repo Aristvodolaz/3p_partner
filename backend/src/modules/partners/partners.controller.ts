@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -71,5 +72,13 @@ export class PartnersController {
   @ApiOperation({ summary: 'История изменений по партнёру' })
   getHistory(@Param('id', ParseIntPipe) id: number) {
     return this.partnersService.getHistory(id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Безвозвратно удалить партнёра со всеми заявками, SKU, тарифами и актами',
+  })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.partnersService.remove(id);
   }
 }

@@ -53,9 +53,16 @@ export default {
         panel: '0 2px 8px rgba(27,24,21,0.06), 0 24px 48px -16px rgba(27,24,21,0.22)',
       },
       keyframes: {
+        // Финальный кадр — 'transform: none', а не 'translateY(0)': с
+        // animation-fill-mode: both (см. ниже) элемент навсегда остаётся с
+        // вычисленным transform последнего кадра, а ЛЮБОЙ transform кроме
+        // none — даже единичная матрица — создаёт новый containing block
+        // для потомков с position:fixed. main оборачивает каждую страницу
+        // этой анимацией, из-за чего все модалки (position:fixed внутри
+        // main) центрировались не по вьюпорту, а по границам main.
         'fade-in-up': {
           '0%': { opacity: '0', transform: 'translateY(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '100%': { opacity: '1', transform: 'none' },
         },
         'fade-in': {
           '0%': { opacity: '0' },
