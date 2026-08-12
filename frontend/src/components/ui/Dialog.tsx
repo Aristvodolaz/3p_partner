@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,7 +49,13 @@ export function Dialog({
     onClose();
   };
 
-  return (
+  // Портал прямо в body: если рендерить диалог там, где он вызван, position:fixed
+  // ломается любым предком с transform/filter/will-change (в т.ч. страничной
+  // анимацией входа на <main> — даже animation-fill-mode:both с финальным
+  // transform:none в некоторых браузерах продолжает создавать containing
+  // block, пока анимация формально не снята с элемента). Портал снимает эту
+  // зависимость насовсем, а не только от конкретного текущего предка.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm animate-fade-in"
@@ -76,6 +83,7 @@ export function Dialog({
         </div>
         <div className="overflow-y-auto flex-1 min-h-0 px-6 py-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

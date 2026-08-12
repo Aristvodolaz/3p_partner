@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { Clock, X } from 'lucide-react';
 import { usePartnerHistory } from '@/hooks/usePartners';
 import { FIELD_LABELS } from '@/types/partner';
@@ -12,7 +13,8 @@ interface Props {
 export function PartnerHistoryDrawer({ partnerId, partnerName, onClose }: Props) {
   const { data: history, isLoading } = usePartnerHistory(partnerId);
 
-  return (
+  // Портал в body — см. комментарий в Dialog.tsx.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col h-full">
@@ -77,6 +79,7 @@ export function PartnerHistoryDrawer({ partnerId, partnerName, onClose }: Props)
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
