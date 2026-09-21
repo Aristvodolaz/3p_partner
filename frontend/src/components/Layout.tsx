@@ -4,6 +4,7 @@ import {
   Package,
   Coins,
   Truck,
+  Ship,
   UserCog,
   FileSpreadsheet,
   ListChecks,
@@ -12,13 +13,17 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
-const NPP_NAV = [{ to: '/incoming-deliveries', label: 'ВХП', icon: Truck }];
+const NPP_NAV = [
+  { to: '/incoming-deliveries', label: 'ВХП', icon: Truck },
+  { to: '/outgoing-deliveries', label: 'ИСП', icon: Ship },
+];
 
 const NRP_NAV = [
   { to: '/partners', label: 'Партнёры', icon: Users },
   { to: '/skus', label: 'Справочник SKU', icon: Package },
   { to: '/tariffs', label: 'Тарифы', icon: Coins },
   { to: '/incoming-deliveries', label: 'ВХП', icon: Truck },
+  { to: '/outgoing-deliveries', label: 'ИСП', icon: Ship },
   { to: '/inventory', label: 'Инвентаризация', icon: ListChecks },
   { to: '/acts', label: 'Акты', icon: FileSpreadsheet },
   { to: '/employees', label: 'Сотрудники', icon: UserCog },

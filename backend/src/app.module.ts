@@ -15,6 +15,7 @@ import { ActsModule } from './modules/acts/acts.module';
 import { DocumentNumberingModule } from './common/document-numbering/document-numbering.module';
 import { IncomingDeliveriesModule } from './modules/incoming-deliveries/incoming-deliveries.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { OutgoingDeliveriesModule } from './modules/outgoing-deliveries/outgoing-deliveries.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     ShippingModule,
     PackingModule,
     ActsModule,
+    OutgoingDeliveriesModule,
     IncomingDeliveriesModule,
     InventoryModule,
   ],

@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DocumentNumberingService } from '../../common/document-numbering/document-numbering.service';
+import { OutgoingDeliveriesService } from '../outgoing-deliveries/outgoing-deliveries.service';
 import {
   CreateIncomingDeliveryDto,
   IncomingDeliveryItemDto,
@@ -27,6 +28,7 @@ export class IncomingDeliveriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly numbering: DocumentNumberingService,
+    private readonly outgoingDeliveries: OutgoingDeliveriesService,
   ) {}
 
   async findAll(partnerId?: number, status?: string) {
@@ -171,6 +173,25 @@ export class IncomingDeliveriesService {
         },
       });
       await this.numbering.logStatus('INCOMING', id, nextStatus, executedBy);
+
+      // Кросс-докинг (п.2.3 ИСП-блока ТЗ): как только приёмка полностью
+      // завершена, автоматически создаём ИСП с фактически принятым
+      // количеством — товар едет дальше без хранения.
+      if (nextStatus === 'Выполнено' && refreshed.isCrossDock) {
+        await this.outgoingDeliveries.createFromIncoming(
+          {
+            ...refreshed,
+            items: refreshed.items.map((i) => ({
+              article: i.article,
+              name: i.name,
+              quantity: i.factQuantity ?? i.quantity,
+              weight: i.weight,
+              volume: i.volume,
+            })),
+          },
+          executedBy,
+        );
+      }
     }
 
     return this.findOne(id);

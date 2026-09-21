@@ -7,6 +7,7 @@ export interface Operation {
   tariff: string | null;
   applySizeCoef: boolean;
   sortOrder: number;
+  phase: 'INCOMING' | 'OUTGOING' | 'BOTH';
 }
 
 export interface TariffCoefficient {
