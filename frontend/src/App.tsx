@@ -6,6 +6,7 @@ import { PartnersPage } from '@/pages/PartnersPage';
 import { SkusPage } from '@/pages/SkusPage';
 import { TariffsPage } from '@/pages/TariffsPage';
 import { RequestsPage } from '@/pages/RequestsPage';
+import { IncomingDeliveriesPage } from '@/pages/IncomingDeliveriesPage';
 import { EmployeesPage } from '@/pages/EmployeesPage';
 import { ActsPage } from '@/pages/ActsPage';
 
@@ -16,7 +17,10 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
-          <Route path="/" element={<Navigate to="/requests" replace />} />
+          <Route path="/" element={<Navigate to="/incoming-deliveries" replace />} />
+          <Route path="/incoming-deliveries" element={<IncomingDeliveriesPage />} />
+          {/* Архив — старый единый цикл заявки, заменён ВХП/ИСП/Инвентаризацией.
+              Данные и маршрут оставлены для истории/актов, из навигации убран. */}
           <Route path="/requests" element={<RequestsPage />} />
 
           <Route element={<ProtectedRoute requireRole="НРП" />}>

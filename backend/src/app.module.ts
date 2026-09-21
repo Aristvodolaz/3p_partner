@@ -12,11 +12,14 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { PackingModule } from './modules/packing/packing.module';
 import { ActsModule } from './modules/acts/acts.module';
+import { DocumentNumberingModule } from './common/document-numbering/document-numbering.module';
+import { IncomingDeliveriesModule } from './modules/incoming-deliveries/incoming-deliveries.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    DocumentNumberingModule,
     AuthModule,
     EmployeesModule,
     PartnersModule,
@@ -28,6 +31,7 @@ import { ActsModule } from './modules/acts/acts.module';
     ShippingModule,
     PackingModule,
     ActsModule,
+    IncomingDeliveriesModule,
   ],
 })
 export class AppModule {}

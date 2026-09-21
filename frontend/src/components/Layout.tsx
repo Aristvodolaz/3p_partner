@@ -3,7 +3,7 @@ import {
   Users,
   Package,
   Coins,
-  ClipboardList,
+  Truck,
   UserCog,
   FileSpreadsheet,
   LogOut,
@@ -11,13 +11,13 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 
-const NPP_NAV = [{ to: '/requests', label: 'Заявки', icon: ClipboardList }];
+const NPP_NAV = [{ to: '/incoming-deliveries', label: 'ВХП', icon: Truck }];
 
 const NRP_NAV = [
   { to: '/partners', label: 'Партнёры', icon: Users },
   { to: '/skus', label: 'Справочник SKU', icon: Package },
   { to: '/tariffs', label: 'Тарифы', icon: Coins },
-  { to: '/requests', label: 'Заявки', icon: ClipboardList },
+  { to: '/incoming-deliveries', label: 'ВХП', icon: Truck },
   { to: '/acts', label: 'Акты', icon: FileSpreadsheet },
   { to: '/employees', label: 'Сотрудники', icon: UserCog },
 ];
