@@ -58,6 +58,12 @@ export class ImportTariffsDto {
 }
 
 export class UpdateOperationDto {
+  @ApiPropertyOptional({ description: 'Наименование операции' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  name?: string;
+
   @ApiPropertyOptional({ description: 'Описание операции' })
   @IsOptional()
   @IsString()
@@ -68,4 +74,45 @@ export class UpdateOperationDto {
   @IsString()
   @MaxLength(100)
   unit?: string;
+
+  @ApiPropertyOptional({ description: 'Тариф по умолчанию, руб. с НДС' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  tariff?: number;
+
+  @ApiPropertyOptional({ description: 'Применять размерный коэффициент К по ШДВ' })
+  @IsOptional()
+  @IsBoolean()
+  applySizeCoef?: boolean;
+}
+
+export class CreateOperationDto {
+  @ApiProperty({ description: 'Наименование операции' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name: string;
+
+  @ApiPropertyOptional({ description: 'Единица измерения' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  unit?: string;
+
+  @ApiPropertyOptional({ description: 'Описание операции' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Тариф по умолчанию, руб. с НДС' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  tariff?: number;
+
+  @ApiPropertyOptional({ description: 'Применять размерный коэффициент К по ШДВ', default: false })
+  @IsOptional()
+  @IsBoolean()
+  applySizeCoef?: boolean;
 }

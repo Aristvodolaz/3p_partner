@@ -49,6 +49,13 @@ function intOrUndef(s?: string): number | undefined {
   return n === undefined ? undefined : Math.round(n);
 }
 
+/** Значение операции (поле «Значение» в чек-листе) как количество — по умолчанию 1 */
+function parseQty(value: string | null | undefined): number {
+  if (!value) return 1;
+  const n = Number(value.replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
 export function SkuForm({
   operations,
   partnerTariffs,
@@ -70,6 +77,7 @@ export function SkuForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -101,6 +109,24 @@ export function SkuForm({
     );
     return map;
   });
+
+  // Суммарная стоимость обработки по умолчанию: сумма (тариф операции × её кол-во)
+  // по всем отмеченным операциям — используется и как справочная сумма, и как
+  // источник автозаполнения полей «Затраты на допупаковку».
+  const totalOpsCost = useMemo(() => {
+    let sum = 0;
+    for (const op of operations) {
+      const rawValue = selectedOps.get(op.code);
+      if (rawValue === undefined) continue;
+      const eff = calcEffectiveTariff(op, tariffByCode.get(op.code), sumOfSidesNow, coefficients);
+      if (!eff) continue;
+      const qty = parseQty(rawValue);
+      sum += eff.total * qty;
+    }
+    return Math.round(sum * 100) / 100;
+  }, [operations, selectedOps, tariffByCode, sumOfSidesNow, coefficients]);
+
+  const boxQuantNow = intOrUndef(watch('boxQuant'));
 
   // Специальные отметки
   const initialMarks = useMemo(
@@ -272,12 +298,40 @@ export function SkuForm({
 
         <div>
           <label className="label">Затраты на допупаковку 1 ед., руб.</label>
-          <input {...register('packCostUnit')} placeholder="5" inputMode="decimal" className="input" />
+          <div className="flex gap-2">
+            <input {...register('packCostUnit')} placeholder="5" inputMode="decimal" className="input" />
+            <button
+              type="button"
+              className="btn-secondary text-xs px-2 whitespace-nowrap"
+              title="Заполнить суммой стоимости отмеченных операций по умолчанию"
+              disabled={totalOpsCost <= 0}
+              onClick={() => setValue('packCostUnit', String(totalOpsCost), { shouldDirty: true })}
+            >
+              Авто
+            </button>
+          </div>
         </div>
 
         <div>
           <label className="label">Затраты на допупаковку 1 короб, руб.</label>
-          <input {...register('packCostBox')} placeholder="20" inputMode="decimal" className="input" />
+          <div className="flex gap-2">
+            <input {...register('packCostBox')} placeholder="20" inputMode="decimal" className="input" />
+            <button
+              type="button"
+              className="btn-secondary text-xs px-2 whitespace-nowrap"
+              title="Заполнить: стоимость операций × квант коробочный"
+              disabled={totalOpsCost <= 0 || !boxQuantNow}
+              onClick={() =>
+                setValue(
+                  'packCostBox',
+                  String(Math.round(totalOpsCost * (boxQuantNow ?? 1) * 100) / 100),
+                  { shouldDirty: true },
+                )
+              }
+            >
+              Авто
+            </button>
+          </div>
         </div>
 
         <div className="sm:col-span-2">
@@ -344,7 +398,13 @@ export function SkuForm({
 
       {/* Операции */}
       <div>
-        <label className="label">Операции по SKU</label>
+        <div className="flex items-center justify-between">
+          <label className="label mb-0">Операции по SKU</label>
+          <span className="text-xs text-gray-500">
+            Итого стоимость обработки по умолчанию:{' '}
+            <span className="font-semibold text-gray-700">{totalOpsCost.toFixed(2)} ₽</span>
+          </span>
+        </div>
         <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 mt-1 max-h-72 overflow-y-auto">
           {operations.map((op) => {
             const checked = selectedOps.has(op.code);

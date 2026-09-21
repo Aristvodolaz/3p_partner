@@ -92,12 +92,40 @@ export function useUpdateOperation() {
       ...body
     }: {
       id: number;
+      name?: string;
       description?: string;
       unit?: string;
+      tariff?: number;
+      applySizeCoef?: boolean;
     }) => skusApi.updateOperation(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: OPERATIONS_KEY });
       qc.invalidateQueries({ queryKey: TARIFFS_KEY });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useCreateOperation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: skusApi.createOperation,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: OPERATIONS_KEY });
+      toast.success('Операция добавлена в справочник');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useDeleteOperation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => skusApi.deleteOperation(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: OPERATIONS_KEY });
+      qc.invalidateQueries({ queryKey: TARIFFS_KEY });
+      toast.success('Операция удалена из справочника');
     },
     onError: (err: Error) => toast.error(err.message),
   });

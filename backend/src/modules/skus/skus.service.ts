@@ -195,11 +195,64 @@ export class SkusService {
 
   async updateOperation(
     id: number,
-    data: { description?: string; unit?: string },
+    data: { name?: string; description?: string; unit?: string; tariff?: number; applySizeCoef?: boolean },
   ) {
     const op = await this.prisma.operation.findUnique({ where: { id } });
     if (!op) throw new NotFoundException(`Операция #${id} не найдена`);
     return this.prisma.operation.update({ where: { id }, data });
+  }
+
+  /** Создаёт новую операцию в общем справочнике (доступен всем партнёрам через их тарифы) */
+  async createOperation(data: {
+    name: string;
+    unit?: string;
+    description?: string;
+    tariff?: number;
+    applySizeCoef?: boolean;
+  }) {
+    const ops = await this.getOperations();
+    const norm = normalizeName(data.name);
+    if (ops.some((op) => normalizeName(op.name) === norm)) {
+      throw new ConflictException(`Операция «${data.name}» уже есть в справочнике`);
+    }
+    const maxSort = ops.reduce((m, op) => Math.max(m, op.sortOrder), 0);
+    return this.prisma.operation.create({
+      data: {
+        code: await this.generateOpCode(data.name),
+        name: data.name,
+        unit: data.unit ?? null,
+        description: data.description ?? null,
+        tariff: data.tariff ?? null,
+        applySizeCoef: data.applySizeCoef ?? false,
+        sortOrder: maxSort + 1,
+      },
+    });
+  }
+
+  /**
+   * Удаляет операцию из общего справочника. Блокируется, если операция уже
+   * где-то использована (тарифы партнёров, чек-лист SKU, история тарифов,
+   * зафиксированные выполнения в ТСД) — вместо падения по FK-ограничению
+   * (та же логика, что и для удаления партнёра, см. partners.service.ts).
+   */
+  async deleteOperation(id: number) {
+    const op = await this.prisma.operation.findUnique({ where: { id } });
+    if (!op) throw new NotFoundException(`Операция #${id} не найдена`);
+
+    const [tariffs, skuOps, history, executions] = await Promise.all([
+      this.prisma.partnerTariff.count({ where: { operationId: id } }),
+      this.prisma.skuOperation.count({ where: { operationId: id } }),
+      this.prisma.tariffHistory.count({ where: { operationId: id } }),
+      this.prisma.itemOperationExecution.count({ where: { operationId: id } }),
+    ]);
+    if (tariffs || skuOps || history || executions) {
+      throw new ConflictException(
+        `Нельзя удалить операцию «${op.name}» — она уже используется (тарифы, SKU или история выполнения)`,
+      );
+    }
+
+    await this.prisma.operation.delete({ where: { id } });
+    return { deleted: true };
   }
 
   private async generateOpCode(name: string) {

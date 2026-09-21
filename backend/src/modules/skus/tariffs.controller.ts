@@ -12,6 +12,7 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SetPartnerTariffsDto } from './dto/partner-tariffs.dto';
 import {
+  CreateOperationDto,
   ImportTariffsDto,
   UpdateOperationDto,
 } from './dto/import-tariffs.dto';
@@ -36,13 +37,25 @@ export class TariffsController {
     return this.skusService.getCoefficients();
   }
 
+  @Post('operations')
+  @ApiOperation({ summary: 'Добавить операцию в общий справочник (доступна всем партнёрам)' })
+  createOperation(@Body() dto: CreateOperationDto) {
+    return this.skusService.createOperation(dto);
+  }
+
   @Patch('operations/:id')
-  @ApiOperation({ summary: 'Редактировать описание/единицу измерения операции' })
+  @ApiOperation({ summary: 'Редактировать операцию в общем справочнике' })
   updateOperation(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOperationDto,
   ) {
     return this.skusService.updateOperation(id, dto);
+  }
+
+  @Delete('operations/:id')
+  @ApiOperation({ summary: 'Удалить операцию из общего справочника' })
+  deleteOperation(@Param('id', ParseIntPipe) id: number) {
+    return this.skusService.deleteOperation(id);
   }
 
   @Get()

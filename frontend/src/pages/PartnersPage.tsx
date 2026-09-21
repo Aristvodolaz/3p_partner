@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Plus, Search, Users } from 'lucide-react';
+import { LayoutGrid, List, Plus, Search, Users } from 'lucide-react';
 import { usePartners, useCreatePartner } from '@/hooks/usePartners';
 import { PartnerCard } from '@/components/partners/PartnerCard';
 import { PartnerForm } from '@/components/partners/PartnerForm';
 import { Dialog } from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 import type { PartnerFormData } from '@/types/partner';
 
 export function PartnersPage() {
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<boolean | undefined>(undefined);
   const [createOpen, setCreateOpen] = useState(false);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
 
   const { data, isLoading } = usePartners({
     search: search || undefined,
@@ -78,6 +80,28 @@ export function PartnersPage() {
               </button>
             ))}
           </div>
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 self-start">
+            <button
+              onClick={() => setView('grid')}
+              title="Вид карточками"
+              className={cn(
+                'p-1.5 rounded-md transition-colors',
+                view === 'grid' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600',
+              )}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => setView('list')}
+              title="Вид списком"
+              className={cn(
+                'p-1.5 rounded-md transition-colors',
+                view === 'list' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600',
+              )}
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -118,10 +142,16 @@ export function PartnersPage() {
               </button>
             )}
           </div>
-        ) : (
+        ) : view === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {partners.map((p) => (
-              <PartnerCard key={p.id} partner={p} />
+              <PartnerCard key={p.id} partner={p} view="grid" />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {partners.map((p) => (
+              <PartnerCard key={p.id} partner={p} view="list" />
             ))}
           </div>
         )}

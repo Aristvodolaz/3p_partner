@@ -13,6 +13,7 @@ import {
   FileDown,
   Trash2,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Partner } from '@/types/partner';
 import { formatDateShort } from '@/lib/utils';
 import { exportPartnerToExcel } from '@/lib/exportPartner';
@@ -31,9 +32,10 @@ import type { PartnerFormData } from '@/types/partner';
 
 interface Props {
   partner: Partner;
+  view?: 'grid' | 'list';
 }
 
-export function PartnerCard({ partner }: Props) {
+export function PartnerCard({ partner, view = 'grid' }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -58,78 +60,108 @@ export function PartnerCard({ partner }: Props) {
     setConfirmOpen(false);
   };
 
+  const actions = (
+    <>
+      <button className="btn-ghost text-xs" onClick={() => setEditOpen(true)}>
+        <Pencil size={14} />
+        Редактировать
+      </button>
+      <button className="btn-ghost text-xs" onClick={() => setHistoryOpen(true)}>
+        <History size={14} />
+        История
+      </button>
+      <button
+        className="btn-ghost text-xs text-green-700 hover:bg-green-50"
+        onClick={() => exportPartnerToExcel(partner)}
+        title="Выгрузить в Excel"
+      >
+        <FileDown size={14} />
+        Excel
+      </button>
+      <button
+        className={`btn-ghost text-xs ${partner.isActive ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+        onClick={() => setConfirmOpen(true)}
+      >
+        {partner.isActive ? <PowerOff size={14} /> : <Power size={14} />}
+        {partner.isActive ? 'Деактивировать' : 'Активировать'}
+      </button>
+      <button
+        className="btn-ghost text-xs ml-auto text-red-600 hover:bg-red-50"
+        onClick={() => setDeleteOpen(true)}
+        title="Удалить безвозвратно"
+      >
+        <Trash2 size={14} />
+        Удалить
+      </button>
+    </>
+  );
+
   return (
     <>
-      <div className={`card p-5 transition-all hover:shadow-md ${!partner.isActive ? 'opacity-60' : ''}`}>
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-              <Building2 size={20} className="text-primary" />
+      {view === 'list' ? (
+        <div
+          className={cn(
+            'card p-4 transition-all hover:shadow-md',
+            !partner.isActive && 'opacity-60',
+          )}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <Building2 size={20} className="text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-900 break-words">{partner.name}</h3>
+                <span className={partner.isActive ? 'badge-green' : 'badge-red'}>
+                  {partner.isActive ? 'Активен' : 'Деактивирован'}
+                </span>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate">{partner.name}</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Создан {formatDateShort(partner.createdAt)}</p>
-            </div>
+            <div className="flex flex-wrap gap-1">{actions}</div>
           </div>
-          <span className={`flex-shrink-0 ${partner.isActive ? 'badge-green' : 'badge-red'}`}>
-            {partner.isActive ? 'Активен' : 'Деактивирован'}
-          </span>
-        </div>
 
-        <div className="space-y-2 text-sm">
-          <InfoRow icon={<FileText size={14} />} label="ИНН" value={partner.inn} mono />
-          <InfoRow icon={<FileText size={14} />} label="Договор" value={partner.contractNumber} mono />
-          <InfoRow icon={<User size={14} />} label="Контакт" value={partner.contactPerson} />
-          <InfoRow icon={<Phone size={14} />} label="Телефон" value={partner.phone} />
-          <InfoRow icon={<Mail size={14} />} label="Email" value={partner.email} />
-          <InfoRow
-            icon={<CreditCard size={14} />}
-            label="Оплата"
-            value={partner.paymentTerms}
-            clamp
-          />
+          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm mt-3 pt-3 border-t border-gray-100">
+            <InfoRow icon={<FileText size={14} />} label="ИНН" value={partner.inn} mono />
+            <InfoRow icon={<FileText size={14} />} label="Договор" value={partner.contractNumber} mono />
+            <InfoRow icon={<User size={14} />} label="Контакт" value={partner.contactPerson} />
+            <InfoRow icon={<Phone size={14} />} label="Телефон" value={partner.phone} />
+            <InfoRow icon={<Mail size={14} />} label="Email" value={partner.email} />
+          </div>
         </div>
+      ) : (
+        <div className={`card p-5 transition-all hover:shadow-md ${!partner.isActive ? 'opacity-60' : ''}`}>
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <Building2 size={20} className="text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-900 break-words">{partner.name}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Создан {formatDateShort(partner.createdAt)}</p>
+              </div>
+            </div>
+            <span className={`flex-shrink-0 ${partner.isActive ? 'badge-green' : 'badge-red'}`}>
+              {partner.isActive ? 'Активен' : 'Деактивирован'}
+            </span>
+          </div>
 
-        <div className="flex flex-wrap gap-1 mt-4 pt-4 border-t border-gray-100">
-          <button
-            className="btn-ghost text-xs"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil size={14} />
-            Редактировать
-          </button>
-          <button
-            className="btn-ghost text-xs"
-            onClick={() => setHistoryOpen(true)}
-          >
-            <History size={14} />
-            История
-          </button>
-          <button
-            className="btn-ghost text-xs text-green-700 hover:bg-green-50"
-            onClick={() => exportPartnerToExcel(partner)}
-            title="Выгрузить в Excel"
-          >
-            <FileDown size={14} />
-            Excel
-          </button>
-          <button
-            className={`btn-ghost text-xs ${partner.isActive ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
-            onClick={() => setConfirmOpen(true)}
-          >
-            {partner.isActive ? <PowerOff size={14} /> : <Power size={14} />}
-            {partner.isActive ? 'Деактивировать' : 'Активировать'}
-          </button>
-          <button
-            className="btn-ghost text-xs ml-auto text-red-600 hover:bg-red-50"
-            onClick={() => setDeleteOpen(true)}
-            title="Удалить безвозвратно"
-          >
-            <Trash2 size={14} />
-            Удалить
-          </button>
+          <div className="space-y-2 text-sm">
+            <InfoRow icon={<FileText size={14} />} label="ИНН" value={partner.inn} mono />
+            <InfoRow icon={<FileText size={14} />} label="Договор" value={partner.contractNumber} mono />
+            <InfoRow icon={<User size={14} />} label="Контакт" value={partner.contactPerson} />
+            <InfoRow icon={<Phone size={14} />} label="Телефон" value={partner.phone} />
+            <InfoRow icon={<Mail size={14} />} label="Email" value={partner.email} />
+            <InfoRow
+              icon={<CreditCard size={14} />}
+              label="Оплата"
+              value={partner.paymentTerms}
+              clamp
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1 mt-4 pt-4 border-t border-gray-100">{actions}</div>
         </div>
-      </div>
+      )}
 
       <Dialog
         open={editOpen}

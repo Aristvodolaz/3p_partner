@@ -4,6 +4,7 @@ import {
   Coins,
   FileSpreadsheet,
   History,
+  Plus,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -11,6 +12,8 @@ import { toast } from 'sonner';
 import { usePartners } from '@/hooks/usePartners';
 import {
   useCoefficients,
+  useCreateOperation,
+  useDeleteOperation,
   useDeletePartnerTariffs,
   useImportTariffs,
   useOperations,
@@ -23,12 +26,15 @@ import { Dialog } from '@/components/ui/Dialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { parseTariffsExcel, type TariffParseResult } from '@/lib/importTariffsExcel';
 import { formatDateShort } from '@/lib/utils';
+import type { Operation } from '@/types/sku';
 
 export function TariffsPage() {
   const [partnerId, setPartnerId] = useState<number | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
+  const [createOpOpen, setCreateOpOpen] = useState(false);
+  const [deleteOpTarget, setDeleteOpTarget] = useState<Operation | null>(null);
 
   // Черновики правок: тарифы (code → строка) и описания (opId → строка)
   const [tariffDraft, setTariffDraft] = useState<Record<string, string>>({});
@@ -42,6 +48,8 @@ export function TariffsPage() {
   const setTariffs = useSetPartnerTariffs(partnerId ?? 0);
   const deleteTariffs = useDeletePartnerTariffs();
   const updateOperation = useUpdateOperation();
+  const createOperation = useCreateOperation();
+  const deleteOperation = useDeleteOperation();
 
   const partners = partnersData?.data ?? [];
   const selectedPartner = useMemo(
@@ -106,29 +114,35 @@ export function TariffsPage() {
             Цены за каждую операцию по партнёрам
           </p>
         </div>
-        {selectedPartner && (
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-secondary" onClick={() => setCreateOpOpen(true)}>
+            <Plus size={16} />
+            Добавить операцию
+          </button>
+          {selectedPartner && (
             <button className="btn-secondary" onClick={() => setHistoryOpen(true)}>
               <History size={16} />
               История
             </button>
+          )}
+          {selectedPartner && (
             <button className="btn-secondary" onClick={() => setImportOpen(true)}>
               <FileSpreadsheet size={16} />
               Импорт из Excel
             </button>
-            {hasChanges && (
-              <button
-                className="btn-primary"
-                onClick={handleSave}
-                disabled={setTariffs.isPending || updateOperation.isPending}
-              >
-                {setTariffs.isPending || updateOperation.isPending
-                  ? 'Сохранение...'
-                  : 'Сохранить изменения'}
-              </button>
-            )}
-          </div>
-        )}
+          )}
+          {selectedPartner && hasChanges && (
+            <button
+              className="btn-primary"
+              onClick={handleSave}
+              disabled={setTariffs.isPending || updateOperation.isPending}
+            >
+              {setTariffs.isPending || updateOperation.isPending
+                ? 'Сохранение...'
+                : 'Сохранить изменения'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -180,6 +194,7 @@ export function TariffsPage() {
                   <th className="px-4 py-3 font-medium text-right whitespace-nowrap">
                     Тариф, руб. с НДС
                   </th>
+                  <th className="px-4 py-3 font-medium w-8" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -225,6 +240,16 @@ export function TariffsPage() {
                           inputMode="decimal"
                           className="input w-24 text-right text-sm py-1 ml-auto"
                         />
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <button
+                          type="button"
+                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          onClick={() => setDeleteOpTarget(op)}
+                          title="Удалить операцию из справочника"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -304,7 +329,143 @@ export function TariffsPage() {
         danger
         loading={deleteTariffs.isPending}
       />
+
+      <CreateOperationDialog
+        open={createOpOpen}
+        onClose={() => setCreateOpOpen(false)}
+        onSubmit={(data) => createOperation.mutateAsync(data)}
+        isLoading={createOperation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!deleteOpTarget}
+        onClose={() => setDeleteOpTarget(null)}
+        onConfirm={async () => {
+          if (!deleteOpTarget) return;
+          await deleteOperation.mutateAsync(deleteOpTarget.id);
+          setDeleteOpTarget(null);
+        }}
+        title="Удалить операцию?"
+        description={`Операция «${deleteOpTarget?.name}» будет удалена из общего справочника для всех партнёров. Нельзя удалить операцию, которая уже где-то используется.`}
+        confirmLabel="Удалить"
+        danger
+        loading={deleteOperation.isPending}
+      />
     </div>
+  );
+}
+
+function CreateOperationDialog({
+  open,
+  onClose,
+  onSubmit,
+  isLoading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: {
+    name: string;
+    unit?: string;
+    description?: string;
+    tariff?: number;
+    applySizeCoef?: boolean;
+  }) => Promise<unknown>;
+  isLoading?: boolean;
+}) {
+  const [name, setName] = useState('');
+  const [unit, setUnit] = useState('');
+  const [description, setDescription] = useState('');
+  const [tariff, setTariff] = useState('');
+  const [applySizeCoef, setApplySizeCoef] = useState(false);
+
+  const reset = () => {
+    setName('');
+    setUnit('');
+    setDescription('');
+    setTariff('');
+    setApplySizeCoef(false);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      toast.error('Укажите название операции');
+      return;
+    }
+    const parsedTariff = tariff.trim() ? Number(tariff.replace(',', '.')) : undefined;
+    if (tariff.trim() && !Number.isFinite(parsedTariff)) {
+      toast.error('Некорректный тариф');
+      return;
+    }
+    await onSubmit({
+      name: name.trim(),
+      unit: unit.trim() || undefined,
+      description: description.trim() || undefined,
+      tariff: parsedTariff,
+      applySizeCoef,
+    });
+    handleClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} title="Добавить операцию в справочник" size="sm">
+      <div className="space-y-4">
+        <div>
+          <label className="label">Название *</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Упаковка в стрейч-плёнку"
+            className="input"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="label">Единица измерения</label>
+          <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="шт." className="input" />
+        </div>
+        <div>
+          <label className="label">Описание</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="input resize-none"
+          />
+        </div>
+        <div>
+          <label className="label">Тариф по умолчанию, руб. с НДС</label>
+          <input
+            value={tariff}
+            onChange={(e) => setTariff(e.target.value)}
+            inputMode="decimal"
+            placeholder="10"
+            className="input"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={applySizeCoef}
+            onChange={(e) => setApplySizeCoef(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          Применять размерный коэффициент К по ШДВ
+        </label>
+        <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
+          <button type="button" className="btn-secondary" onClick={handleClose} disabled={isLoading}>
+            Отмена
+          </button>
+          <button type="button" className="btn-primary" onClick={handleSubmit} disabled={isLoading}>
+            {isLoading ? 'Добавление...' : 'Добавить'}
+          </button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

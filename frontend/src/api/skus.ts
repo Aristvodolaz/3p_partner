@@ -71,9 +71,25 @@ export const skusApi = {
 
   updateOperation: async (
     id: number,
-    body: { description?: string; unit?: string },
+    body: { name?: string; description?: string; unit?: string; tariff?: number; applySizeCoef?: boolean },
   ): Promise<Operation> => {
     const { data } = await api.patch(`/tariffs/operations/${id}`, body);
+    return data;
+  },
+
+  createOperation: async (body: {
+    name: string;
+    unit?: string;
+    description?: string;
+    tariff?: number;
+    applySizeCoef?: boolean;
+  }): Promise<Operation> => {
+    const { data } = await api.post('/tariffs/operations', body);
+    return data;
+  },
+
+  deleteOperation: async (id: number): Promise<{ deleted: boolean }> => {
+    const { data } = await api.delete(`/tariffs/operations/${id}`);
     return data;
   },
 
