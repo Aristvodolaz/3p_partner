@@ -9,37 +9,40 @@ datasource db {
 }
 
 model Partner {
-  id             Int              @id @default(autoincrement())
-  name           String           @db.NVarChar(255)
-  inn            String           @db.NVarChar(12)
-  contractNumber String           @db.NVarChar(100)
-  contactPerson  String           @db.NVarChar(255)
-  phone          String           @db.NVarChar(20)
-  email          String           @db.NVarChar(255)
-  paymentTerms   String           @db.NVarChar(Max)
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now()) @db.DateTime2
-  updatedAt      DateTime         @updatedAt @db.DateTime2
-  history        PartnerHistory[]
-  skus           Sku[]
-  tariffs        PartnerTariff[]
-  tariffHistory  TariffHistory[]
-  requests       PartnerRequest[]
-  acts           Act[]
+  id                 Int                @id @default(autoincrement())
+  name               String             @db.NVarChar(255)
+  inn                String             @db.NVarChar(12)
+  contractNumber     String             @db.NVarChar(100)
+  contactPerson      String             @db.NVarChar(255)
+  phone              String             @db.NVarChar(20)
+  email              String             @db.NVarChar(255)
+  paymentTerms       String             @db.NVarChar(Max)
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now()) @db.DateTime2
+  updatedAt          DateTime           @updatedAt @db.DateTime2
+  history            PartnerHistory[]
+  skus               Sku[]
+  tariffs            PartnerTariff[]
+  tariffHistory      TariffHistory[]
+  requests           PartnerRequest[]
+  acts               Act[]
+  incomingDeliveries IncomingDelivery[]
+  outgoingDeliveries OutgoingDelivery[]
+  inventoryTasks     InventoryTask[]
 
   @@map("Partners")
 }
 
 model PartnerRequest {
-  id          Int           @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   partnerId   Int
-  number      String        @unique @db.NVarChar(100)
-  status      String        @default("Запланировано") @db.NVarChar(50)
-  requestDate DateTime?     @db.DateTime2
-  comment     String?       @db.NVarChar(Max)
-  createdAt   DateTime      @default(now()) @db.DateTime2
-  updatedAt   DateTime      @updatedAt @db.DateTime2
-  partner     Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  number      String              @unique @db.NVarChar(100)
+  status      String              @default("Запланировано") @db.NVarChar(50)
+  requestDate DateTime?           @db.DateTime2
+  comment     String?             @db.NVarChar(Max)
+  createdAt   DateTime            @default(now()) @db.DateTime2
+  updatedAt   DateTime            @updatedAt @db.DateTime2
+  partner     Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   items       RequestItem[]
   receipts    Receipt[]
   shipments   Shipment[]
@@ -50,23 +53,23 @@ model PartnerRequest {
 }
 
 model RequestItem {
-  id            Int                      @id @default(autoincrement())
-  requestId     Int
-  skuId         Int?
-  article       String                   @db.NVarChar(100)
-  name          String?                  @db.NVarChar(500)
-  quantity      Int
-  factQuantity  Int?
-  actualArticle String?                  @db.NVarChar(100)
-  arrivalDate   DateTime?                @db.DateTime2
-  shipmentDate  DateTime?                @db.DateTime2
-  unitCost      Decimal?                 @db.Decimal(12, 2)
-  totalCost     Decimal?                 @db.Decimal(14, 2)
-  request       PartnerRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  sku           Sku?                     @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  executions    ItemOperationExecution[]
-  receiptItems  ReceiptItem[]
-  packingUnits  PackingUnit[]
+  id               Int                      @id @default(autoincrement())
+  requestId        Int
+  skuId            Int?
+  article          String                   @db.NVarChar(100)
+  name             String?                  @db.NVarChar(500)
+  quantity         Int
+  factQuantity     Int?
+  actualArticle    String?                  @db.NVarChar(100)
+  arrivalDate      DateTime?                @db.DateTime2
+  shipmentDate     DateTime?                @db.DateTime2
+  unitCost         Decimal?                 @db.Decimal(12, 2)
+  totalCost        Decimal?                 @db.Decimal(14, 2)
+  request          PartnerRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sku              Sku?                     @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  executions       ItemOperationExecution[]
+  receiptItems     ReceiptItem[]
+  packingUnits     PackingUnit[]
   packingUnitItems PackingUnitItem[]
 
   @@index([requestId])
@@ -196,18 +199,24 @@ model PartnerTariff {
 }
 
 model Operation {
-  id             Int             @id @default(autoincrement())
-  code           String          @unique @db.NVarChar(50)
-  name           String          @db.NVarChar(255)
-  description    String?         @db.NVarChar(Max)
-  unit           String?         @db.NVarChar(100)
-  tariff         Decimal?        @db.Decimal(10, 2)
-  applySizeCoef  Boolean         @default(false)
-  sortOrder      Int             @default(0)
-  skuOperations  SkuOperation[]
-  partnerTariffs PartnerTariff[]
-  tariffHistory  TariffHistory[]
-  executions     ItemOperationExecution[]
+  id                             Int                             @id @default(autoincrement())
+  code                           String                          @unique @db.NVarChar(50)
+  name                           String                          @db.NVarChar(255)
+  description                    String?                         @db.NVarChar(Max)
+  unit                           String?                         @db.NVarChar(100)
+  tariff                         Decimal?                        @db.Decimal(10, 2)
+  applySizeCoef                  Boolean                         @default(false)
+  sortOrder                      Int                             @default(0)
+  // К какому документу операция относится по умолчанию: ВХП (приёмка) —
+  // INCOMING, ИСП (обработка/отгрузка) — OUTGOING, или обеим — BOTH.
+  // Существующие операции по умолчанию OUTGOING — сохраняет их нынешнее
+  // поведение (это уже был чек-лист SKU для исходящей обработки).
+  phase                          String                          @default("OUTGOING") @db.NVarChar(10)
+  skuOperations                  SkuOperation[]
+  partnerTariffs                 PartnerTariff[]
+  tariffHistory                  TariffHistory[]
+  executions                     ItemOperationExecution[]
+  outgoingDeliveryItemOperations OutgoingDeliveryItemOperation[]
 
   @@map("OperationsCatalog")
 }
@@ -239,28 +248,31 @@ model TariffHistory {
 }
 
 model Sku {
-  id                 Int            @id @default(autoincrement())
-  partnerId          Int
-  article            String         @db.NVarChar(100)
-  barcode            String?        @db.NVarChar(100)
-  name               String         @db.NVarChar(500)
-  color              String?        @db.NVarChar(100)
-  shelfLife          String?        @db.NVarChar(100)
-  sumOfSides         Decimal?       @db.Decimal(10, 2)
-  weight             Decimal?       @db.Decimal(10, 3)
-  clientRequirements String?        @db.NVarChar(Max)
-  specialMarks       String?        @db.NVarChar(500)
-  boxQuant           Int?
-  palletQuant        Int?
-  packCostUnit       Decimal?       @db.Decimal(10, 2)
-  packCostBox        Decimal?       @db.Decimal(10, 2)
-  allowMixedBox      Boolean        @default(false)
-  createdAt          DateTime       @default(now()) @db.DateTime2
-  updatedAt          DateTime       @updatedAt @db.DateTime2
-  partner            Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  operations         SkuOperation[]
-  photos             SkuPhoto[]
-  requestItems       RequestItem[]
+  id                    Int                    @id @default(autoincrement())
+  partnerId             Int
+  article               String                 @db.NVarChar(100)
+  barcode               String?                @db.NVarChar(100)
+  name                  String                 @db.NVarChar(500)
+  color                 String?                @db.NVarChar(100)
+  shelfLife             String?                @db.NVarChar(100)
+  sumOfSides            Decimal?               @db.Decimal(10, 2)
+  weight                Decimal?               @db.Decimal(10, 3)
+  clientRequirements    String?                @db.NVarChar(Max)
+  specialMarks          String?                @db.NVarChar(500)
+  boxQuant              Int?
+  palletQuant           Int?
+  packCostUnit          Decimal?               @db.Decimal(10, 2)
+  packCostBox           Decimal?               @db.Decimal(10, 2)
+  allowMixedBox         Boolean                @default(false)
+  createdAt             DateTime               @default(now()) @db.DateTime2
+  updatedAt             DateTime               @updatedAt @db.DateTime2
+  partner               Partner                @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  operations            SkuOperation[]
+  photos                SkuPhoto[]
+  requestItems          RequestItem[]
+  incomingDeliveryItems IncomingDeliveryItem[]
+  outgoingDeliveryItems OutgoingDeliveryItem[]
+  inventoryTaskItems    InventoryTaskItem[]
 
   @@unique([partnerId, article])
   @@index([partnerId])
@@ -290,21 +302,21 @@ model SkuPhoto {
 }
 
 model PackingUnit {
-  id            Int               @id @default(autoincrement())
-  requestItemId Int
-  type          String            @db.NVarChar(10) // BOX | PALLET
-  code          String            @db.NVarChar(100) // ШК ВПС / номер паллеты
+  id             Int               @id @default(autoincrement())
+  requestItemId  Int
+  type           String            @db.NVarChar(10) // BOX | PALLET
+  code           String            @db.NVarChar(100) // ШК ВПС / номер паллеты
   parentPalletId Int?
-  expiryDate    DateTime?         @db.DateTime2
-  nestingQty    Int?
-  status        String            @default("IN_PROGRESS") @db.NVarChar(20) // IN_PROGRESS | COMPLETED
-  createdBy     String            @db.NVarChar(255)
-  createdAt     DateTime          @default(now()) @db.DateTime2
-  completedAt   DateTime?         @db.DateTime2
-  item          RequestItem       @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
-  parentPallet  PackingUnit?      @relation("PalletBoxes", fields: [parentPalletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  boxes         PackingUnit[]     @relation("PalletBoxes")
-  items         PackingUnitItem[]
+  expiryDate     DateTime?         @db.DateTime2
+  nestingQty     Int?
+  status         String            @default("IN_PROGRESS") @db.NVarChar(20) // IN_PROGRESS | COMPLETED
+  createdBy      String            @db.NVarChar(255)
+  createdAt      DateTime          @default(now()) @db.DateTime2
+  completedAt    DateTime?         @db.DateTime2
+  item           RequestItem       @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
+  parentPallet   PackingUnit?      @relation("PalletBoxes", fields: [parentPalletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  boxes          PackingUnit[]     @relation("PalletBoxes")
+  items          PackingUnitItem[]
 
   @@index([requestItemId])
   @@index([parentPalletId])
@@ -327,28 +339,32 @@ model PackingUnitItem {
 }
 
 model Act {
-  id           Int           @id @default(autoincrement())
-  partnerId    Int
-  type         String        @db.NVarChar(20) // REQUEST | ON_DEMAND | MONTHLY
-  periodLabel  String?       @db.NVarChar(20) // напр. "2026-08" для MONTHLY
-  totalAmount  Decimal       @db.Decimal(14, 2)
-  data         String        @db.NVarChar(Max) // JSON-снимок построчной разбивки
-  createdBy    String        @db.NVarChar(255)
-  createdAt    DateTime      @default(now()) @db.DateTime2
-  partner      Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  requests     ActRequest[]
+  id          Int          @id @default(autoincrement())
+  partnerId   Int
+  type        String       @db.NVarChar(20) // REQUEST | ON_DEMAND | MONTHLY
+  periodLabel String?      @db.NVarChar(20) // напр. "2026-08" для MONTHLY
+  totalAmount Decimal      @db.Decimal(14, 2)
+  data        String       @db.NVarChar(Max) // JSON-снимок построчной разбивки
+  createdBy   String       @db.NVarChar(255)
+  createdAt   DateTime     @default(now()) @db.DateTime2
+  partner     Partner      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  requests    ActRequest[]
 
   @@index([partnerId])
   @@map("Acts")
 }
 
 model ActRequest {
-  id            Int      @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   actId         Int
   requestId     Int
-  requestNumber String   @db.NVarChar(100)
-  amount        Decimal  @db.Decimal(14, 2)
-  act           Act      @relation(fields: [actId], references: [id], onDelete: Cascade)
+  requestNumber String  @db.NVarChar(100)
+  amount        Decimal @db.Decimal(14, 2)
+  // Заявка (PartnerRequest, архив) или ИСП (OutgoingDelivery, актуальный
+  // источник биллинга) — какая именно, определяет docType; requestId в
+  // обоих случаях хранит id соответствующей таблицы, не FK на PartnerRequest.
+  docType       String  @default("REQUEST") @db.NVarChar(20) // REQUEST (архив) | OUTGOING
+  act           Act     @relation(fields: [actId], references: [id], onDelete: Cascade)
 
   @@index([actId])
   @@map("ActRequests")
@@ -379,4 +395,183 @@ model PartnerHistory {
 
   @@index([partnerId])
   @@map("PartnerHistory")
+}
+
+// ---------------------------------------------------------------------
+// ВХП / ИСП / Инвентаризация — см. Документ5.docx. Заменяют PartnerRequest
+// (та остаётся в БД как архив без миграции, см. requests-модуль).
+// ---------------------------------------------------------------------
+
+/// Сквозная нумерация по типу документа: lastNumber инкрементится атомарно.
+model DocumentCounter {
+  docType    String @id @db.NVarChar(20) // INCOMING | OUTGOING | INVENTORY
+  lastNumber Int    @default(0)
+
+  @@map("DocumentCounters")
+}
+
+/// История статусов: кто, когда, на какой статус перевёл документ. Общая для всех трёх типов.
+model StatusChange {
+  id        Int      @id @default(autoincrement())
+  docType   String   @db.NVarChar(20) // INCOMING | OUTGOING | INVENTORY
+  docId     Int
+  status    String   @db.NVarChar(50)
+  changedBy String   @db.NVarChar(255)
+  changedAt DateTime @default(now()) @db.DateTime2
+
+  @@index([docType, docId])
+  @@map("StatusChanges")
+}
+
+/// ВХП — заявка на входящую поставку.
+model IncomingDelivery {
+  id            Int                    @id @default(autoincrement())
+  number        String                 @unique @db.NVarChar(50) // "ВХП-123"
+  partnerId     Int
+  warehouseCode String?                @db.NVarChar(100)
+  isCrossDock   Boolean                @default(false)
+  status        String                 @default("Создана") @db.NVarChar(20)
+  plannedDate   DateTime?              @db.DateTime2
+  actualDate    DateTime?              @db.DateTime2 // проставляется автоматически при первой приёмке
+  comment       String?                @db.NVarChar(Max)
+  createdBy     String                 @db.NVarChar(255)
+  createdAt     DateTime               @default(now()) @db.DateTime2
+  updatedAt     DateTime               @updatedAt @db.DateTime2
+  partner       Partner                @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  items         IncomingDeliveryItem[]
+
+  @@index([partnerId])
+  @@map("IncomingDeliveries")
+}
+
+model IncomingDeliveryItem {
+  id           Int              @id @default(autoincrement())
+  deliveryId   Int
+  skuId        Int?
+  article      String           @db.NVarChar(100)
+  name         String?          @db.NVarChar(500)
+  barcode      String?          @db.NVarChar(100)
+  quantity     Int
+  factQuantity Int?
+  weight       Decimal?         @db.Decimal(10, 3)
+  volume       Decimal?         @db.Decimal(10, 3)
+  delivery     IncomingDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  sku          Sku?             @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([deliveryId])
+  @@map("IncomingDeliveryItems")
+}
+
+/// ИСП — заявка на исходящую поставку.
+model OutgoingDelivery {
+  id                       Int                    @id @default(autoincrement())
+  number                   String                 @unique @db.NVarChar(50) // "ИСП-123"
+  partnerId                Int
+  warehouseCode            String?                @db.NVarChar(100)
+  isCrossDock              Boolean                @default(false)
+  // Без FK-связи (как StorageMovement.requestItemId в этом же файле) — это
+  // чисто информационная трассировка "создано автоматически из ВХП X по
+  // КД", а не структурная зависимость. С FK любое из направлений (Cascade
+  // или SetNull) даёт SQL Server multiple-cascade-paths через Partner →
+  // IncomingDelivery/OutgoingDelivery одновременно.
+  sourceIncomingDeliveryId Int?
+  status                   String                 @default("Создана") @db.NVarChar(20)
+  shipDate                 DateTime?              @db.DateTime2
+  actualDate               DateTime?              @db.DateTime2
+  comment                  String?                @db.NVarChar(Max)
+  createdBy                String                 @db.NVarChar(255)
+  createdAt                DateTime               @default(now()) @db.DateTime2
+  updatedAt                DateTime               @updatedAt @db.DateTime2
+  partner                  Partner                @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  items                    OutgoingDeliveryItem[]
+
+  @@index([partnerId])
+  @@index([sourceIncomingDeliveryId])
+  @@map("OutgoingDeliveries")
+}
+
+model OutgoingDeliveryItem {
+  id           Int                             @id @default(autoincrement())
+  deliveryId   Int
+  skuId        Int?
+  article      String                          @db.NVarChar(100)
+  name         String?                         @db.NVarChar(500)
+  quantity     Int
+  factQuantity Int?
+  weight       Decimal?                        @db.Decimal(10, 3)
+  volume       Decimal?                        @db.Decimal(10, 3)
+  unitCost     Decimal?                        @db.Decimal(12, 2)
+  totalCost    Decimal?                        @db.Decimal(14, 2)
+  delivery     OutgoingDelivery                @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  sku          Sku?                            @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  operations   OutgoingDeliveryItemOperation[]
+
+  @@index([deliveryId])
+  @@map("OutgoingDeliveryItems")
+}
+
+/// Переопределяемый (относительно дефолта из SKU) состав операций по позиции ИСП.
+model OutgoingDeliveryItemOperation {
+  id          Int                  @id @default(autoincrement())
+  itemId      Int
+  operationId Int
+  value       String?              @db.NVarChar(100)
+  done        Boolean              @default(false)
+  factQty     Int?
+  executedBy  String?              @db.NVarChar(255)
+  executedAt  DateTime?            @db.DateTime2
+  item        OutgoingDeliveryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  operation   Operation            @relation(fields: [operationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([itemId, operationId])
+  @@index([itemId])
+  @@map("OutgoingDeliveryItemOperations")
+}
+
+/// Инвентаризация — по инициативе партнёра или внутренняя.
+model InventoryTask {
+  id        Int                     @id @default(autoincrement())
+  number    String                  @unique @db.NVarChar(50) // "ИНВ-123"
+  partnerId Int? // null — внутренняя инвентаризация
+  source    String                  @db.NVarChar(20) // PARTNER | INTERNAL
+  status    String                  @default("Создана") @db.NVarChar(20)
+  createdBy String                  @db.NVarChar(255)
+  createdAt DateTime                @default(now()) @db.DateTime2
+  updatedAt DateTime                @updatedAt @db.DateTime2
+  partner   Partner?                @relation(fields: [partnerId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  items     InventoryTaskItem[]
+  executors InventoryTaskExecutor[]
+
+  @@index([partnerId])
+  @@map("InventoryTasks")
+}
+
+model InventoryTaskItem {
+  id          Int           @id @default(autoincrement())
+  taskId      Int
+  skuId       Int?
+  article     String        @db.NVarChar(100)
+  name        String?       @db.NVarChar(500)
+  address     String?       @db.NVarChar(100) // ячейка хранения на момент снимка остатков
+  expectedQty Int // снимок остатка на момент создания задания
+  countedQty  Int?
+  countedBy   String?       @db.NVarChar(255)
+  countedAt   DateTime?     @db.DateTime2
+  task        InventoryTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sku         Sku?          @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([taskId])
+  @@map("InventoryTaskItems")
+}
+
+/// Кому из сотрудников назначено задание — задание может выполнять несколько человек.
+model InventoryTaskExecutor {
+  id         Int           @id @default(autoincrement())
+  taskId     Int
+  employeeId String        @db.NVarChar(50)
+  addedAt    DateTime      @default(now()) @db.DateTime2
+  task       InventoryTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, employeeId])
+  @@map("InventoryTaskExecutors")
 }

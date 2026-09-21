@@ -184,6 +184,29 @@ export class PartnersService {
         ).map((i) => i.id)
       : [];
 
+    // ВХП/ИСП/Инвентаризация: их позиции тоже ссылаются на Sku этого же
+    // партнёра через NoAction FK (см. schema.prisma) — тот же класс проблемы,
+    // что и с requestItem.skuId выше. Партнёра целиком каскадит, но Sku
+    // партнёра нельзя удалить, пока на него смотрит хоть одна позиция.
+    const incomingIds = (
+      await this.prisma.incomingDelivery.findMany({
+        where: { partnerId: id },
+        select: { id: true },
+      })
+    ).map((d) => d.id);
+    const outgoingIds = (
+      await this.prisma.outgoingDelivery.findMany({
+        where: { partnerId: id },
+        select: { id: true },
+      })
+    ).map((d) => d.id);
+    const inventoryTaskIds = (
+      await this.prisma.inventoryTask.findMany({
+        where: { partnerId: id },
+        select: { id: true },
+      })
+    ).map((t) => t.id);
+
     await this.prisma.$transaction([
       this.prisma.packingUnitItem.deleteMany({
         where: { requestItemId: { in: itemIds } },
@@ -197,6 +220,18 @@ export class PartnersService {
       }),
       this.prisma.requestItem.updateMany({
         where: { id: { in: itemIds } },
+        data: { skuId: null },
+      }),
+      this.prisma.incomingDeliveryItem.updateMany({
+        where: { deliveryId: { in: incomingIds } },
+        data: { skuId: null },
+      }),
+      this.prisma.outgoingDeliveryItem.updateMany({
+        where: { deliveryId: { in: outgoingIds } },
+        data: { skuId: null },
+      }),
+      this.prisma.inventoryTaskItem.updateMany({
+        where: { taskId: { in: inventoryTaskIds } },
         data: { skuId: null },
       }),
       this.prisma.partner.delete({ where: { id } }),
