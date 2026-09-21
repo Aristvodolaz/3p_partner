@@ -14,6 +14,7 @@ import { PackingModule } from './modules/packing/packing.module';
 import { ActsModule } from './modules/acts/acts.module';
 import { DocumentNumberingModule } from './common/document-numbering/document-numbering.module';
 import { IncomingDeliveriesModule } from './modules/incoming-deliveries/incoming-deliveries.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { IncomingDeliveriesModule } from './modules/incoming-deliveries/incoming
     PackingModule,
     ActsModule,
     IncomingDeliveriesModule,
+    InventoryModule,
   ],
 })
 export class AppModule {}
