@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet } from 'lucide-react';
 import { usePartners } from '@/hooks/usePartners';
-import { useRequests } from '@/hooks/useRequests';
+import { useOutgoingDeliveries } from '@/hooks/useOutgoingDeliveries';
+import { outgoingTotal } from '@/types/outgoingDelivery';
 import { useActs, useGenerateAct } from '@/hooks/useActs';
 import { exportActToExcel } from '@/lib/exportAct';
 import { ACT_TYPE_LABELS, type Act, type ActType } from '@/types/act';
@@ -18,10 +19,8 @@ export function ActsPage() {
   const { data: partnersData } = usePartners();
   const partners = partnersData?.data ?? [];
 
-  const { data: requestsData } = useRequests({ partnerId });
-  const eligibleRequests = (requestsData?.data ?? []).filter(
-    (r) => r.status === 'Отгружено' || r.status === 'Закрыто',
-  );
+  const { data: deliveriesData } = useOutgoingDeliveries({ partnerId, status: 'Выполнено' });
+  const eligibleRequests = deliveriesData?.data ?? [];
 
   const { data: acts } = useActs(partnerId);
   const generate = useGenerateAct();
@@ -53,7 +52,7 @@ export function ActsPage() {
       <div className="mb-6">
         <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Акты выполненных услуг</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Расчёт стоимости по заявке, по запросу партнёра или за месяц
+          Расчёт стоимости по ИСП, по запросу партнёра или за месяц
         </p>
       </div>
 
@@ -107,11 +106,11 @@ export function ActsPage() {
         {type !== 'MONTHLY' && partnerId && (
           <div>
             <label className="label">
-              Заявки (отгружено/закрыто) {type === 'REQUEST' ? '— выберите одну' : '— можно несколько'}
+              ИСП (выполненные) {type === 'REQUEST' ? '— выберите одну' : '— можно несколько'}
             </label>
             {eligibleRequests.length === 0 ? (
               <p className="text-sm text-gray-400">
-                У партнёра нет заявок в статусе «Отгружено»/«Закрыто»
+                У партнёра нет исходящих поставок в статусе «Выполнено»
               </p>
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
@@ -127,11 +126,7 @@ export function ActsPage() {
                       className="h-4 w-4"
                     />
                     <span>
-                      №{r.number} · {r.status} ·{' '}
-                      {r.items
-                        .reduce((s, i) => s + (i.totalCost ? Number(i.totalCost) : 0), 0)
-                        .toLocaleString('ru-RU')}{' '}
-                      ₽
+                      {r.number} · {r.status} · {outgoingTotal(r).toLocaleString('ru-RU')} ₽
                     </span>
                   </label>
                 ))}
@@ -227,10 +222,10 @@ function ActBreakdownTable({ act }: { act: Act }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr className="text-left text-xs text-gray-500">
-            <th className="px-3 py-2 font-medium">№ заявки</th>
+            <th className="px-3 py-2 font-medium">№ ИСП</th>
             <th className="px-3 py-2 font-medium">Артикул</th>
             <th className="px-3 py-2 font-medium">Операция</th>
-            <th className="px-3 py-2 font-medium text-center">Кол-во заявки</th>
+            <th className="px-3 py-2 font-medium text-center">Кол-во</th>
             <th className="px-3 py-2 font-medium text-right">Тариф</th>
             <th className="px-3 py-2 font-medium text-right">Сумма</th>
           </tr>

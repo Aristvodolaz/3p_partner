@@ -30,11 +30,19 @@ interface ActBreakdownRequest {
 export class ActsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Источник биллинга — ИСП (OutgoingDelivery), а не архивная PartnerRequest
+   * (см. схему из Документ5.docx): акт выставляется по факту отгрузки.
+   * Разбивка строится из фактического (возможно переопределённого, п.8
+   * ИСП-блока ТЗ) состава операций каждой позиции — OutgoingDeliveryItem.
+   * operations — а не пересчитывается заново из дефолтов справочника SKU,
+   * как было раньше: так акт всегда отражает реально выполненные операции.
+   */
   async generate(dto: GenerateActDto, createdBy = 'system') {
     const partner = await this.prisma.partner.findUnique({ where: { id: dto.partnerId } });
     if (!partner) throw new NotFoundException(`Партнёр #${dto.partnerId} не найден`);
 
-    let requests: Awaited<ReturnType<typeof this.loadRequests>>;
+    let deliveries: Awaited<ReturnType<typeof this.loadDeliveries>>;
 
     if (dto.type === 'MONTHLY') {
       if (!dto.periodLabel) {
@@ -43,33 +51,41 @@ export class ActsService {
       const [year, month] = dto.periodLabel.split('-').map(Number);
       const periodStart = new Date(Date.UTC(year, month - 1, 1));
       const periodEnd = new Date(Date.UTC(year, month, 1));
-      requests = await this.prisma.partnerRequest.findMany({
+      deliveries = await this.prisma.outgoingDelivery.findMany({
         where: {
           partnerId: dto.partnerId,
-          status: { in: ['Отгружено', 'Закрыто'] },
-          requestDate: { gte: periodStart, lt: periodEnd },
+          status: 'Выполнено',
+          actualDate: { gte: periodStart, lt: periodEnd },
         },
-        include: { items: true },
+        include: deliveryInclude,
       });
     } else {
       if (!dto.requestIds || dto.requestIds.length === 0) {
         throw new BadRequestException('Укажите requestIds для этого типа акта');
       }
-      requests = await this.loadRequests(dto.partnerId, dto.requestIds);
-      if (requests.length !== dto.requestIds.length) {
-        throw new NotFoundException('Одна или несколько заявок не найдены у этого партнёра');
+      deliveries = await this.loadDeliveries(dto.partnerId, dto.requestIds);
+      if (deliveries.length !== dto.requestIds.length) {
+        throw new NotFoundException('Одна или несколько ИСП не найдены у этого партнёра');
       }
     }
 
-    const operationsByArticle = await this.buildOperationBreakdown(dto.partnerId);
+    const tariffByOp = await this.buildTariffIndex(dto.partnerId);
 
-    const breakdown: ActBreakdownRequest[] = requests.map((r) => {
-      const items: ActBreakdownItem[] = r.items.map((i) => {
-        const opTemplate = operationsByArticle.get(normalizeArticle(i.article)) ?? [];
-        const operations: ActOperationLine[] = opTemplate.map((op) => ({
-          ...op,
-          amount: round2(op.tariff * op.qty * i.quantity),
-        }));
+    const breakdown: ActBreakdownRequest[] = deliveries.map((d) => {
+      const items: ActBreakdownItem[] = d.items.map((i) => {
+        const operations: ActOperationLine[] = i.operations.map((io) => {
+          const base =
+            tariffByOp.get(io.operationId) ??
+            (io.operation.tariff != null ? Number(io.operation.tariff) : 0);
+          const qty = parseQty(io.value);
+          return {
+            operationName: io.operation.name,
+            unit: io.operation.unit,
+            tariff: round2(base),
+            qty,
+            amount: round2(base * qty),
+          };
+        });
         return {
           article: i.article,
           name: i.name,
@@ -80,7 +96,7 @@ export class ActsService {
         };
       });
       const requestTotal = items.reduce((sum, i) => sum + i.totalCost, 0);
-      return { requestId: r.id, requestNumber: r.number, items, requestTotal };
+      return { requestId: d.id, requestNumber: d.number, items, requestTotal };
     });
 
     const totalAmount = breakdown.reduce((sum, r) => sum + r.requestTotal, 0);
@@ -98,6 +114,7 @@ export class ActsService {
             requestId: r.requestId,
             requestNumber: r.requestNumber,
             amount: r.requestTotal,
+            docType: 'OUTGOING',
           })),
         },
       },
@@ -125,61 +142,16 @@ export class ActsService {
     return this.toResponse(act);
   }
 
-  private async loadRequests(partnerId: number, requestIds: number[]) {
-    return this.prisma.partnerRequest.findMany({
-      where: { id: { in: requestIds }, partnerId },
-      include: { items: true },
+  private async loadDeliveries(partnerId: number, ids: number[]) {
+    return this.prisma.outgoingDelivery.findMany({
+      where: { id: { in: ids }, partnerId },
+      include: deliveryInclude,
     });
   }
 
-  /**
-   * Построчная разбивка по операциям для каждого артикула партнёра:
-   * операция × тариф (с учётом коэффициента по ШДВ) × кол-во из карточки SKU.
-   * Используется для детализации акта («операции × кол-во × тариф = сумма» — ТЗ 2.10).
-   */
-  private async buildOperationBreakdown(
-    partnerId: number,
-  ): Promise<Map<string, Omit<ActOperationLine, 'amount'>[]>> {
-    const [skus, tariffs, coefficients] = await this.prisma.$transaction([
-      this.prisma.sku.findMany({
-        where: { partnerId },
-        include: { operations: { include: { operation: true } } },
-      }),
-      this.prisma.partnerTariff.findMany({ where: { partnerId } }),
-      this.prisma.tariffCoefficient.findMany(),
-    ]);
-
-    const tariffByOp = new Map(tariffs.map((t) => [t.operationId, Number(t.tariff)]));
-
-    const byArticle = new Map<string, Omit<ActOperationLine, 'amount'>[]>();
-    for (const sku of skus) {
-      const sum = sku.sumOfSides != null ? Number(sku.sumOfSides) : undefined;
-      const lines: Omit<ActOperationLine, 'amount'>[] = sku.operations.map((so) => {
-        const base =
-          tariffByOp.get(so.operationId) ??
-          (so.operation.tariff != null ? Number(so.operation.tariff) : 0);
-
-        let multiplier = 1;
-        if (so.operation.applySizeCoef && sum !== undefined) {
-          const coef = coefficients.find((c) => {
-            const min = Number(c.minSum);
-            const max = c.maxSum != null ? Number(c.maxSum) : Infinity;
-            return sum >= min && sum <= max;
-          });
-          if (coef) multiplier = Number(coef.multiplier);
-        }
-
-        return {
-          operationName: so.operation.name,
-          unit: so.operation.unit,
-          tariff: round2(base * multiplier),
-          qty: parseQty(so.value),
-        };
-      });
-      byArticle.set(normalizeArticle(sku.article), lines);
-    }
-
-    return byArticle;
+  private async buildTariffIndex(partnerId: number): Promise<Map<number, number>> {
+    const tariffs = await this.prisma.partnerTariff.findMany({ where: { partnerId } });
+    return new Map(tariffs.map((t) => [t.operationId, Number(t.tariff)]));
   }
 
   private toResponse(act: {
@@ -213,9 +185,9 @@ export class ActsService {
   }
 }
 
-function normalizeArticle(s: string): string {
-  return s.trim().toLowerCase();
-}
+const deliveryInclude = {
+  items: { include: { operations: { include: { operation: true } } } },
+} as const;
 
 function parseQty(value: string | null): number {
   if (!value) return 1;

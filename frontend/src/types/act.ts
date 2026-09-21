@@ -57,7 +57,7 @@ export interface GenerateActInput {
 }
 
 export const ACT_TYPE_LABELS: Record<ActType, string> = {
-  REQUEST: 'По заявке',
+  REQUEST: 'По ИСП',
   ON_DEMAND: 'По запросу',
   MONTHLY: 'За месяц',
 };
