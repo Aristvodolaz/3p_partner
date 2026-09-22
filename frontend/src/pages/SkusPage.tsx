@@ -223,6 +223,9 @@ export function SkusPage() {
                   <th className="px-4 py-3 font-medium">Наименование</th>
                   {!partnerId && <th className="px-4 py-3 font-medium">Партнёр</th>}
                   <th className="px-4 py-3 font-medium">Спец. отметки</th>
+                  <th className="px-4 py-3 font-medium text-right whitespace-nowrap">
+                    Стоимость упаковки на 1 ед.
+                  </th>
                   <th className="px-4 py-3 font-medium">Операции</th>
                   <th className="px-4 py-3 font-medium text-right">Действия</th>
                 </tr>
@@ -275,6 +278,11 @@ export function SkusPage() {
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums whitespace-nowrap">
+                      {sku.packCostUnit != null
+                        ? `${Number(sku.packCostUnit).toLocaleString('ru-RU')} ₽`
+                        : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {sku.operations.length > 0 ? (
