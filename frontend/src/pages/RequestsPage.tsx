@@ -31,6 +31,7 @@ import type {
 } from '@/types/request';
 import { hasUnknownArticles, REQUEST_STATUSES, requestTotal } from '@/types/request';
 import { formatDateShort } from '@/lib/utils';
+import { exportRequestPreliminaryCostPdf } from '@/lib/exportRequestPdf';
 import type { Partner } from '@/types/partner';
 import { usePackingUnits } from '@/hooks/usePacking';
 
@@ -174,7 +175,17 @@ export function RequestsPage() {
                         {req.requestDate ? formatDateShort(req.requestDate) : '—'}
                       </td>
                       <td className="px-4 py-3 text-center">{req.items.length}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[13px] font-medium tabular-nums whitespace-nowrap">
+                      <td
+                        className="px-4 py-3 text-right font-mono text-[13px] font-medium tabular-nums whitespace-nowrap cursor-pointer text-primary hover:underline decoration-dotted underline-offset-2"
+                        onClick={() => {
+                          try {
+                            exportRequestPreliminaryCostPdf(req);
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Не удалось сформировать PDF');
+                          }
+                        }}
+                        title="Скачать предварительную стоимость (PDF)"
+                      >
                         {total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : '—'}
                       </td>
                       <td className="px-4 py-3">
