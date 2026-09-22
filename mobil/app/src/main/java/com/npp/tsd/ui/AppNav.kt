@@ -2,8 +2,10 @@ package com.npp.tsd.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.filled.FactCheck
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -28,9 +30,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.npp.tsd.AppContainer
 import com.npp.tsd.core.model.EmployeeInfo
-import com.npp.tsd.feature.requests.itemdetail.ItemDetailScreen
-import com.npp.tsd.feature.requests.list.RequestsListScreen
-import com.npp.tsd.feature.requests.packing.PackingScreen
+import com.npp.tsd.feature.incoming.IncomingDeliveriesListScreen
+import com.npp.tsd.feature.inventory.InventoryTasksListScreen
+import com.npp.tsd.feature.outgoing.OutgoingDeliveriesListScreen
 import com.npp.tsd.feature.settings.SettingsScreen
 import com.npp.tsd.feature.storage.StorageLookupScreen
 import kotlinx.coroutines.launch
@@ -39,28 +41,32 @@ import java.net.URLEncoder
 
 private object Routes {
     const val LOGIN = "login"
-    const val REQUESTS = "requests"
+    const val INCOMING = "incoming"
+    const val OUTGOING = "outgoing"
+    const val INVENTORY = "inventory"
     const val STORAGE_LOOKUP = "storage_lookup"
     const val SETTINGS = "settings"
 
-    const val REQUEST_WORKSPACE = "requests/{requestId}/{requestNumber}"
-    const val ITEM_DETAIL = "requests/{requestId}/{requestNumber}/items/{itemId}"
-    const val PACKING = "requests/{requestId}/{requestNumber}/items/{itemId}/packing"
+    const val INCOMING_WORKSPACE = "incoming/{deliveryId}/{deliveryNumber}"
+    const val OUTGOING_WORKSPACE = "outgoing/{deliveryId}/{deliveryNumber}"
+    const val INVENTORY_WORKSPACE = "inventory/{taskId}/{taskNumber}"
 
-    fun requestWorkspace(id: Int, number: String) =
-        "requests/$id/${URLEncoder.encode(number, "UTF-8")}"
+    fun incomingWorkspace(id: Int, number: String) =
+        "incoming/$id/${URLEncoder.encode(number, "UTF-8")}"
 
-    fun itemDetail(requestId: Int, requestNumber: String, itemId: Int) =
-        "requests/$requestId/${URLEncoder.encode(requestNumber, "UTF-8")}/items/$itemId"
+    fun outgoingWorkspace(id: Int, number: String) =
+        "outgoing/$id/${URLEncoder.encode(number, "UTF-8")}"
 
-    fun packing(requestId: Int, requestNumber: String, itemId: Int) =
-        "requests/$requestId/${URLEncoder.encode(requestNumber, "UTF-8")}/items/$itemId/packing"
+    fun inventoryWorkspace(id: Int, number: String) =
+        "inventory/$id/${URLEncoder.encode(number, "UTF-8")}"
 }
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
 
 private val bottomTabs = listOf(
-    BottomTab(Routes.REQUESTS, "Заявки", Icons.AutoMirrored.Filled.ListAlt),
+    BottomTab(Routes.INCOMING, "ВХП", Icons.Filled.MoveToInbox),
+    BottomTab(Routes.OUTGOING, "ИСП", Icons.Filled.LocalShipping),
+    BottomTab(Routes.INVENTORY, "Инв.", Icons.Filled.FactCheck),
     BottomTab(Routes.STORAGE_LOOKUP, "Склад", Icons.Filled.Inventory2),
     BottomTab(Routes.SETTINGS, "Настройки", Icons.Filled.Settings),
 )
@@ -101,7 +107,7 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (employee != null) Routes.REQUESTS else Routes.LOGIN,
+            startDestination = if (employee != null) Routes.INCOMING else Routes.LOGIN,
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Routes.LOGIN) {
@@ -109,7 +115,7 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
                     authRepository = container.authRepository,
                     onLoggedIn = { emp ->
                         employee = emp
-                        navController.navigate(Routes.REQUESTS) {
+                        navController.navigate(Routes.INCOMING) {
                             popUpTo(Routes.LOGIN) { inclusive = true }
                         }
                     },
@@ -117,11 +123,24 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
                 )
             }
 
-            composable(Routes.REQUESTS) {
-                RequestsListScreen(
-                    requestsRepository = container.requestsRepository,
-                    onOpenRequest = { id, number -> navController.navigate(Routes.requestWorkspace(id, number)) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+            composable(Routes.INCOMING) {
+                IncomingDeliveriesListScreen(
+                    repository = container.incomingDeliveriesRepository,
+                    onOpenDelivery = { id, number -> navController.navigate(Routes.incomingWorkspace(id, number)) },
+                )
+            }
+
+            composable(Routes.OUTGOING) {
+                OutgoingDeliveriesListScreen(
+                    repository = container.outgoingDeliveriesRepository,
+                    onOpenDelivery = { id, number -> navController.navigate(Routes.outgoingWorkspace(id, number)) },
+                )
+            }
+
+            composable(Routes.INVENTORY) {
+                InventoryTasksListScreen(
+                    repository = container.inventoryRepository,
+                    onOpenTask = { id, number -> navController.navigate(Routes.inventoryWorkspace(id, number)) },
                 )
             }
 
@@ -147,66 +166,61 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
                 )
             }
 
-            // Рабочее пространство заявки: Обзор/Приёмка/Хранение/Отгрузка/Документы
-            // переключаются собственным нижним меню внутри RequestWorkspaceScreen.
+            // Рабочие пространства новых документов: Обзор + действие (Приёмка/Отгрузка/Пересчёт)
+            // переключаются собственным нижним меню внутри каждого *WorkspaceScreen.
             composable(
-                Routes.REQUEST_WORKSPACE,
+                Routes.INCOMING_WORKSPACE,
                 arguments = listOf(
-                    navArgument("requestId") { type = NavType.IntType },
-                    navArgument("requestNumber") { type = NavType.StringType },
+                    navArgument("deliveryId") { type = NavType.IntType },
+                    navArgument("deliveryNumber") { type = NavType.StringType },
                 ),
             ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                val requestNumber = backStackEntry.arguments?.getString("requestNumber")
+                val deliveryId = backStackEntry.arguments?.getInt("deliveryId") ?: return@composable
+                val deliveryNumber = backStackEntry.arguments?.getString("deliveryNumber")
                     ?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
-                RequestWorkspaceScreen(
-                    requestId = requestId,
-                    requestNumber = requestNumber,
+                IncomingWorkspaceScreen(
+                    deliveryId = deliveryId,
+                    deliveryNumber = deliveryNumber,
                     container = container,
                     employeeName = employee?.fullName ?: "—",
                     onBack = { navController.popBackStack() },
-                    onOpenItem = { itemId ->
-                        navController.navigate(Routes.itemDetail(requestId, requestNumber, itemId))
-                    },
                 )
             }
 
             composable(
-                Routes.ITEM_DETAIL,
+                Routes.OUTGOING_WORKSPACE,
                 arguments = listOf(
-                    navArgument("requestId") { type = NavType.IntType },
-                    navArgument("requestNumber") { type = NavType.StringType },
-                    navArgument("itemId") { type = NavType.IntType },
+                    navArgument("deliveryId") { type = NavType.IntType },
+                    navArgument("deliveryNumber") { type = NavType.StringType },
                 ),
             ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                val itemId = backStackEntry.arguments?.getInt("itemId") ?: return@composable
-                val requestNumber = backStackEntry.arguments?.getString("requestNumber")
+                val deliveryId = backStackEntry.arguments?.getInt("deliveryId") ?: return@composable
+                val deliveryNumber = backStackEntry.arguments?.getString("deliveryNumber")
                     ?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
-                ItemDetailScreen(
-                    requestId = requestId,
-                    itemId = itemId,
-                    requestsRepository = container.requestsRepository,
+                OutgoingWorkspaceScreen(
+                    deliveryId = deliveryId,
+                    deliveryNumber = deliveryNumber,
+                    container = container,
+                    employeeName = employee?.fullName ?: "—",
                     onBack = { navController.popBackStack() },
-                    onOpenPacking = { navController.navigate(Routes.packing(requestId, requestNumber, itemId)) },
                 )
             }
 
             composable(
-                Routes.PACKING,
+                Routes.INVENTORY_WORKSPACE,
                 arguments = listOf(
-                    navArgument("requestId") { type = NavType.IntType },
-                    navArgument("requestNumber") { type = NavType.StringType },
-                    navArgument("itemId") { type = NavType.IntType },
+                    navArgument("taskId") { type = NavType.IntType },
+                    navArgument("taskNumber") { type = NavType.StringType },
                 ),
             ) { backStackEntry ->
-                val requestId = backStackEntry.arguments?.getInt("requestId") ?: return@composable
-                val itemId = backStackEntry.arguments?.getInt("itemId") ?: return@composable
-                PackingScreen(
-                    requestId = requestId,
-                    requestItemId = itemId,
-                    requestsRepository = container.requestsRepository,
-                    warehouseRepository = container.warehouseRepository,
+                val taskId = backStackEntry.arguments?.getInt("taskId") ?: return@composable
+                val taskNumber = backStackEntry.arguments?.getString("taskNumber")
+                    ?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
+                InventoryWorkspaceScreen(
+                    taskId = taskId,
+                    taskNumber = taskNumber,
+                    container = container,
+                    employeeName = employee?.fullName ?: "—",
                     onBack = { navController.popBackStack() },
                 )
             }

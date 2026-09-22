@@ -62,6 +62,7 @@ data class OperationDto(
     val tariff: String? = null,
     val applySizeCoef: Boolean = false,
     val sortOrder: Int = 0,
+    val phase: String = "OUTGOING",
 )
 
 @Serializable
@@ -146,6 +147,38 @@ data class RequestDetailed(
  * Жизненный цикл заявки: Запланировано → Приёмка → Хранение → В работе →
  * Готово → Отгружено → Закрыто. «Дефект» — отдельный статус вне линейки.
  */
+@Serializable
+data class StatusChangeEntry(
+    val id: Int,
+    val docType: String,
+    val docId: Int,
+    val status: String,
+    val changedBy: String,
+    val changedAt: String,
+)
+
+/**
+ * Статусная модель ВХП/ИСП/Инвентаризации: Создана → Процесс (первое обращение
+ * из интерфейса) → Выполнено (факт указан по всем позициям); Отмена — вручную.
+ * Общая для всех трёх новых типов документов (см. DocumentNumberingService на бэкенде).
+ */
+object DocumentStatus {
+    const val CREATED = "Создана"
+    const val IN_PROGRESS = "Процесс"
+    const val DONE = "Выполнено"
+    const val CANCELLED = "Отмена"
+
+    val ALL = listOf(CREATED, IN_PROGRESS, DONE, CANCELLED)
+
+    fun colorHex(status: String): Long = when (status) {
+        CREATED -> 0xFF6B7280
+        IN_PROGRESS -> 0xFF2563EB
+        DONE -> 0xFF16A34A
+        CANCELLED -> 0xFFDC2626
+        else -> 0xFF9CA3AF
+    }
+}
+
 object RequestStatus {
     const val PLANNED = "Запланировано"
     const val RECEIVING = "Приёмка"

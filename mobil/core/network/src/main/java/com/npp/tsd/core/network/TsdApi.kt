@@ -6,15 +6,23 @@ import com.npp.tsd.core.model.CreateDocumentBody
 import com.npp.tsd.core.model.CreatePackingUnitBody
 import com.npp.tsd.core.model.CreateReceiptBody
 import com.npp.tsd.core.model.CreateShipmentBody
+import com.npp.tsd.core.model.CountInventoryTaskBody
 import com.npp.tsd.core.model.ExecuteOperationBody
+import com.npp.tsd.core.model.IncomingDelivery
+import com.npp.tsd.core.model.IncomingDeliveriesResponse
+import com.npp.tsd.core.model.InventoryTask
+import com.npp.tsd.core.model.InventoryTasksResponse
 import com.npp.tsd.core.model.ItemExecution
 import com.npp.tsd.core.model.LoginBody
 import com.npp.tsd.core.model.LoginResponse
 import com.npp.tsd.core.model.MarkShippedBody
 import com.npp.tsd.core.model.MoveItemBody
+import com.npp.tsd.core.model.OutgoingDelivery
+import com.npp.tsd.core.model.OutgoingDeliveriesResponse
 import com.npp.tsd.core.model.PartnerRequest
 import com.npp.tsd.core.model.PlaceItemBody
 import com.npp.tsd.core.model.Receipt
+import com.npp.tsd.core.model.ReceiveIncomingDeliveryBody
 import com.npp.tsd.core.model.ReceivingSummaryItem
 import com.npp.tsd.core.model.PackingUnit
 import com.npp.tsd.core.model.RemoveItemBody
@@ -22,6 +30,8 @@ import com.npp.tsd.core.model.RequestDetailed
 import com.npp.tsd.core.model.RequestItem
 import com.npp.tsd.core.model.RequestsResponse
 import com.npp.tsd.core.model.Shipment
+import com.npp.tsd.core.model.ShipOutgoingDeliveryBody
+import com.npp.tsd.core.model.StatusChangeEntry
 import com.npp.tsd.core.model.StorageBalanceByAddress
 import com.npp.tsd.core.model.StorageBalanceByArticle
 import com.npp.tsd.core.model.StorageMovement
@@ -167,4 +177,64 @@ interface TsdApi {
         @Path("id") id: Int,
         @Body body: BindParentPalletBody,
     ): PackingUnit
+
+    // --- ВХП ---
+
+    @GET("incoming-deliveries")
+    suspend fun getIncomingDeliveries(
+        @Query("partnerId") partnerId: Int? = null,
+        @Query("status") status: String? = null,
+    ): IncomingDeliveriesResponse
+
+    @GET("incoming-deliveries/{id}")
+    suspend fun getIncomingDelivery(@Path("id") id: Int): IncomingDelivery
+
+    @GET("incoming-deliveries/{id}/history")
+    suspend fun getIncomingDeliveryHistory(@Path("id") id: Int): List<StatusChangeEntry>
+
+    @POST("incoming-deliveries/{id}/receive")
+    suspend fun receiveIncomingDelivery(
+        @Path("id") id: Int,
+        @Body body: ReceiveIncomingDeliveryBody,
+    ): IncomingDelivery
+
+    // --- ИСП ---
+
+    @GET("outgoing-deliveries")
+    suspend fun getOutgoingDeliveries(
+        @Query("partnerId") partnerId: Int? = null,
+        @Query("status") status: String? = null,
+    ): OutgoingDeliveriesResponse
+
+    @GET("outgoing-deliveries/{id}")
+    suspend fun getOutgoingDelivery(@Path("id") id: Int): OutgoingDelivery
+
+    @GET("outgoing-deliveries/{id}/history")
+    suspend fun getOutgoingDeliveryHistory(@Path("id") id: Int): List<StatusChangeEntry>
+
+    @POST("outgoing-deliveries/{id}/ship")
+    suspend fun shipOutgoingDelivery(
+        @Path("id") id: Int,
+        @Body body: ShipOutgoingDeliveryBody,
+    ): OutgoingDelivery
+
+    // --- Инвентаризация ---
+
+    @GET("inventory")
+    suspend fun getInventoryTasks(
+        @Query("partnerId") partnerId: Int? = null,
+        @Query("status") status: String? = null,
+    ): InventoryTasksResponse
+
+    @GET("inventory/{id}")
+    suspend fun getInventoryTask(@Path("id") id: Int): InventoryTask
+
+    @GET("inventory/{id}/history")
+    suspend fun getInventoryTaskHistory(@Path("id") id: Int): List<StatusChangeEntry>
+
+    @POST("inventory/{id}/count")
+    suspend fun countInventoryTask(
+        @Path("id") id: Int,
+        @Body body: CountInventoryTaskBody,
+    ): InventoryTask
 }

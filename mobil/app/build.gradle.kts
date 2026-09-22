@@ -55,6 +55,9 @@ dependencies {
     implementation(project(":feature:shipping"))
     implementation(project(":feature:documents"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:incoming"))
+    implementation(project(":feature:outgoing"))
+    implementation(project(":feature:inventory"))
 
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
