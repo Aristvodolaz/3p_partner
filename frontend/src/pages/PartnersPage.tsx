@@ -31,7 +31,7 @@ export function PartnersPage() {
   return (
     <div>
       {/* Page title */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Партнёры</h1>
             <p className="text-sm text-gray-500 mt-1">

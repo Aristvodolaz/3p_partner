@@ -43,8 +43,11 @@
   .btn-secondary {
     @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-400;
   }
+  /* Фирменный primary теперь тоже красный — для деструктивных действий берём
+     янтарный, а не ещё один оттенок красного, чтобы "Удалить"/"Деактивировать"
+     визуально отличались от обычных подтверждающих кнопок. */
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-400;
+    @apply btn bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-400;
   }
   .btn-ghost {
     @apply btn text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-400;

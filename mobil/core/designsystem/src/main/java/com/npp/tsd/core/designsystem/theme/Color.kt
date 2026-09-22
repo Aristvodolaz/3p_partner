@@ -2,27 +2,33 @@ package com.npp.tsd.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Фирменный синий 3P Partner (совпадает с веб-версией) — основной акцент
-val Blue40 = Color(0xFF1B4F8A)
-val Blue30 = Color(0xFF163F6E)
-val Blue80 = Color(0xFF9BC0E8)
-val Blue90 = Color(0xFFD9E6F5)
-val Blue10 = Color(0xFF0A1F35)
+// Фирменный красный Комус (совпадает с веб-версией, tailwind.config.ts
+// `primary`) — основной акцент. Раньше здесь был синий; имена Blue* сохранены
+// для минимального диффа, значения — новая красная шкала.
+val Blue40 = Color(0xFFD40F1E)
+val Blue30 = Color(0xFFAC0C18)
+val Blue80 = Color(0xFFF5A3A8)
+val Blue90 = Color(0xFFFBD0D2)
+val Blue10 = Color(0xFF330306)
 
-// Бирюзовый — третичный акцент
+// Бирюзовый — третичный акцент (статус "Процесс"/в работе), намеренно НЕ
+// красный, чтобы не сливаться с новым primary.
 val Teal40 = Color(0xFF0D9488)
 val Teal30 = Color(0xFF0B7A70)
 val Teal80 = Color(0xFF8FD6CC)
 val Teal90 = Color(0xFFCCEEEA)
 val Teal10 = Color(0xFF04302B)
 
-// Тёплое золото — точечный акцент (совпадает с web accent), используется
-// скупо: разделители, статы, единичные декоративные детали.
+// Тёплое золото — точечный акцент, используется скупо: разделители, статы,
+// единичные декоративные детали.
 val Gold40 = Color(0xFFC99A3B)
 val Gold80 = Color(0xFFE8D2A0)
 val Gold90 = Color(0xFFF5E9CF)
 
-val Red40 = Color(0xFFDC2626)
+// Material `error` role — умышленно другой красный, чем primary (ближе к
+// стандартному predупреждающему), чтобы деструктивные состояния не сливались
+// с обычными фирменными кнопками, которые теперь тоже красные.
+val Red40 = Color(0xFFB3261E)
 val Red80 = Color(0xFFFFB4AB)
 val Red90 = Color(0xFFFDE2E1)
 val Red10 = Color(0xFF410E0B)

@@ -54,7 +54,6 @@ export function Layout() {
                 <span className="font-display font-semibold text-gray-900 text-[15px] tracking-tight">
                   Partner
                 </span>
-                <span className="text-gray-400 text-xs ml-2 align-middle">НПП</span>
               </div>
             </div>
             <nav className="flex items-center gap-1">

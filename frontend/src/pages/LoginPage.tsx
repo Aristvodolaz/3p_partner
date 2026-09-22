@@ -28,12 +28,12 @@ export function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gray-900 px-4 overflow-hidden">
-      {/* Атмосферный фон: тёплый навy-градиент + тонкая сетка */}
+      {/* Атмосферный фон: фирменный красный градиент + тонкая сетка */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(1100px 600px at 15% -10%, #1B4F8A 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #163F6E 0%, transparent 55%), #17140F',
+            'radial-gradient(1100px 600px at 15% -10%, #D40F1E 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #830912 0%, transparent 55%), #17100F',
         }}
       />
       <div
@@ -51,9 +51,9 @@ export function LoginPage() {
             3P Partner
           </span>
           <div className="flex items-center gap-2 mt-2.5">
-            <span className="h-px w-6 bg-accent-500/70" />
+            <span className="h-px w-6 bg-white/40" />
             <span className="text-white/50 text-xs tracking-[0.2em] uppercase">ТСД · Офис</span>
-            <span className="h-px w-6 bg-accent-500/70" />
+            <span className="h-px w-6 bg-white/40" />
           </div>
         </div>
 
