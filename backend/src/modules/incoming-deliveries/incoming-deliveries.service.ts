@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DocumentNumberingService } from '../../common/document-numbering/document-numbering.service';
 import { OutgoingDeliveriesService } from '../outgoing-deliveries/outgoing-deliveries.service';
+import { StorageService } from '../storage/storage.service';
 import {
   CreateIncomingDeliveryDto,
   IncomingDeliveryItemDto,
@@ -29,6 +30,7 @@ export class IncomingDeliveriesService {
     private readonly prisma: PrismaService,
     private readonly numbering: DocumentNumberingService,
     private readonly outgoingDeliveries: OutgoingDeliveriesService,
+    private readonly storage: StorageService,
   ) {}
 
   async findAll(partnerId?: number, status?: string) {
@@ -152,6 +154,22 @@ export class IncomingDeliveriesService {
         }),
       ),
     );
+
+    // Если на позиции указан адрес — сразу размещаем принятое количество в
+    // зону приёмки (I); дальнейшее перемещение I→S — через POST /storage/move.
+    for (const line of dto.items) {
+      if (!line.addressCode || line.factQuantity <= 0) continue;
+      const item = delivery.items.find((i) => i.id === line.itemId)!;
+      await this.storage.placeIncomingBatch({
+        partnerId: delivery.partnerId,
+        article: item.article,
+        addressCode: line.addressCode,
+        quantity: line.factQuantity,
+        incomingDeliveryId: delivery.id,
+        incomingDeliveryItemId: item.id,
+        createdBy: executedBy,
+      });
+    }
 
     const wasCreated = delivery.status === 'Создана';
     const refreshed = await this.findOne(id);

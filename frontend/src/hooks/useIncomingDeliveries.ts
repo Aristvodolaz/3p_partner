@@ -59,7 +59,7 @@ export function useCancelIncomingDelivery() {
 export function useReceiveIncomingDelivery(id: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (items: { itemId: number; factQuantity: number }[]) =>
+    mutationFn: (items: { itemId: number; factQuantity: number; addressCode?: string }[]) =>
       incomingDeliveriesApi.receive(id, items),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: INCOMING_DELIVERIES_KEY });

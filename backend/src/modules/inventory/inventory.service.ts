@@ -155,6 +155,8 @@ export class InventoryService {
       }
     }
 
+    const itemsById = new Map(task.items.map((i) => [i.id, i]));
+
     await this.prisma.$transaction(
       dto.items.map((line) =>
         this.prisma.inventoryTaskItem.update({
@@ -163,6 +165,40 @@ export class InventoryService {
         }),
       ),
     );
+
+    // Расхождение по факту пересчёта — корректирующее движение по остаткам
+    // (п.12 ТЗ по остаткам: история перемещений включает инвентаризацию).
+    // Для внутренней инвентаризации (partnerId=null) остатки не ведём —
+    // движение по остаткам всегда в разрезе конкретного партнёра.
+    if (task.partnerId) {
+      const adjustments = dto.items
+        .map((line) => {
+          const item = itemsById.get(line.itemId)!;
+          const diff = line.countedQty - item.expectedQty;
+          return { item, diff, countedQty: line.countedQty };
+        })
+        .filter(({ diff }) => diff !== 0);
+
+      if (adjustments.length > 0) {
+        await this.prisma.$transaction(
+          adjustments.map(({ item, diff, countedQty }) =>
+            this.prisma.storageMovement.create({
+              data: {
+                partnerId: task.partnerId!,
+                article: item.article,
+                address: item.address ?? '—',
+                quantity: diff,
+                type: 'ADJUST',
+                docType: 'INVENTORY',
+                docId: task.id,
+                comment: `Инвентаризация ${task.number}: учёт ${item.expectedQty}, факт ${countedQty}`,
+                createdBy: countedBy,
+              },
+            }),
+          ),
+        );
+      }
+    }
 
     const wasCreated = task.status === 'Создана';
     const refreshed = await this.findOne(id);

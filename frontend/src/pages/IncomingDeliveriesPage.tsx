@@ -21,6 +21,7 @@ import {
   useIncomingDeliveryHistory,
   useReceiveIncomingDelivery,
 } from '@/hooks/useIncomingDeliveries';
+import { useStorageAddresses } from '@/hooks/useWarehouseZones';
 import { Dialog } from '@/components/ui/Dialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -414,11 +415,17 @@ function ReceiveDialog({ delivery, onClose }: { delivery: IncomingDelivery; onCl
       delivery.items.map((i) => [i.id, i.factQuantity != null ? String(i.factQuantity) : String(i.quantity)]),
     ),
   );
+  const [addressCodes, setAddressCodes] = useState<Record<number, string>>({});
   const receive = useReceiveIncomingDelivery(delivery.id);
+  const { data: addresses } = useStorageAddresses({ zoneType: 'I' });
 
   const handleSubmit = async () => {
     const items = Object.entries(facts)
-      .map(([itemId, v]) => ({ itemId: Number(itemId), factQuantity: Number(v) }))
+      .map(([itemId, v]) => ({
+        itemId: Number(itemId),
+        factQuantity: Number(v),
+        addressCode: addressCodes[Number(itemId)]?.trim() || undefined,
+      }))
       .filter((i) => Number.isFinite(i.factQuantity) && i.factQuantity >= 0);
     if (!items.length) {
       toast.error('Укажите фактическое количество хотя бы по одной позиции');
@@ -431,6 +438,11 @@ function ReceiveDialog({ delivery, onClose }: { delivery: IncomingDelivery; onCl
   return (
     <Dialog open onClose={onClose} title={`Приёмка — ${delivery.number}`} size="lg">
       <div className="space-y-4">
+        <datalist id="receiving-zone-addresses">
+          {(addresses ?? []).map((a) => (
+            <option key={a.id} value={a.code} />
+          ))}
+        </datalist>
         <div className="border border-gray-200 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -439,6 +451,7 @@ function ReceiveDialog({ delivery, onClose }: { delivery: IncomingDelivery; onCl
                 <th className="px-3 py-2 font-medium">Наименование</th>
                 <th className="px-3 py-2 font-medium text-center">План</th>
                 <th className="px-3 py-2 font-medium text-center w-28">Факт</th>
+                <th className="px-3 py-2 font-medium w-36">Адрес приёмки</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -455,6 +468,15 @@ function ReceiveDialog({ delivery, onClose }: { delivery: IncomingDelivery; onCl
                       className="input text-center py-1"
                     />
                   </td>
+                  <td className="px-3 py-2">
+                    <input
+                      value={addressCodes[item.id] ?? ''}
+                      onChange={(e) => setAddressCodes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                      list="receiving-zone-addresses"
+                      placeholder="код адреса"
+                      className="input py-1 text-xs font-mono"
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -462,7 +484,8 @@ function ReceiveDialog({ delivery, onClose }: { delivery: IncomingDelivery; onCl
         </div>
         <p className="text-xs text-gray-400">
           Исполнитель фиксируется автоматически по вашей учётной записи. Когда факт указан по всем
-          позициям, заявка переходит в статус «Выполнено».
+          позициям, заявка переходит в статус «Выполнено». Если указан адрес зоны приёмки — товар
+          сразу размещается там (дальше переместите его в хранение через «Остатки»).
         </p>
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={receive.isPending}>

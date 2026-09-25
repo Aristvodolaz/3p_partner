@@ -108,20 +108,106 @@ model ReceiptItem {
 }
 
 model StorageMovement {
-  id            Int      @id @default(autoincrement())
-  partnerId     Int
-  article       String   @db.NVarChar(100)
-  requestItemId Int?
-  address       String   @db.NVarChar(100)
-  quantity      Int // положительное — приход на адрес, отрицательное — списание
-  type          String   @db.NVarChar(20) // PLACE | REMOVE | MOVE_OUT | MOVE_IN
-  comment       String?  @db.NVarChar(Max)
-  createdBy     String   @db.NVarChar(255)
-  createdAt     DateTime @default(now()) @db.DateTime2
+  id                     Int       @id @default(autoincrement())
+  partnerId              Int
+  article                String    @db.NVarChar(100)
+  requestItemId          Int?
+  address                String    @db.NVarChar(100) // денормализованный код адреса — снимок на момент движения
+  addressId              Int? // без @relation — см. IncomingDeliveryItemId ниже и sourceIncomingDeliveryId у OutgoingDelivery
+  zoneType               String?   @db.NVarChar(10) // I | S | W | O — снимок типа зоны адреса на момент движения
+  quantity               Int // положительное — приход на адрес, отрицательное — списание
+  type                   String    @db.NVarChar(20) // PLACE | REMOVE | MOVE_OUT | MOVE_IN | ADJUST
+  // "Партия поступления" — ссылка на конкретную позицию ВХП, без @relation по
+  // той же причине, что и остальные информационные ссылки в этом файле
+  // (SQL Server multiple cascade paths через Partner). receivedAt — снимок
+  // даты приёмки, ключ сортировки для FIFO-подбора при создании ИСП.
+  incomingDeliveryItemId Int?
+  receivedAt             DateTime? @db.DateTime2
+  // Источник движения — для истории и трассировки (п.12 ТЗ по остаткам).
+  docType                String?   @db.NVarChar(20) // INCOMING | MOVEMENT_TASK | INVENTORY | null (ручная операция ТСД)
+  docId                  Int?
+  comment                String?   @db.NVarChar(Max)
+  createdBy              String    @db.NVarChar(255)
+  createdAt              DateTime  @default(now()) @db.DateTime2
 
   @@index([partnerId, article])
   @@index([address])
+  @@index([incomingDeliveryItemId])
   @@map("StorageMovements")
+}
+
+// ---------------------------------------------------------------------
+// Остатки товара на складе: зоны, адреса, задания на перемещение (FIFO).
+// ---------------------------------------------------------------------
+
+/// Справочник зон склада: I — приёмка, S — хранение, W — обработка, O — отгрузка.
+model WarehouseZone {
+  id            Int              @id @default(autoincrement())
+  code          String           @unique @db.NVarChar(50)
+  name          String           @db.NVarChar(255)
+  type          String           @db.NVarChar(10) // I | S | W | O
+  warehouseCode String?          @db.NVarChar(100)
+  createdAt     DateTime         @default(now()) @db.DateTime2
+  addresses     StorageAddress[]
+
+  @@map("WarehouseZones")
+}
+
+/// Справочник адресов хранения — каждый адрес принадлежит ровно одной зоне
+/// (и наследует её тип на момент движения через StorageMovement.zoneType).
+model StorageAddress {
+  id            Int           @id @default(autoincrement())
+  code          String        @unique @db.NVarChar(100)
+  zoneId        Int
+  warehouseCode String?       @db.NVarChar(100)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @db.DateTime2
+  zone          WarehouseZone @relation(fields: [zoneId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([zoneId])
+  @@map("StorageAddresses")
+}
+
+/// Задание на перемещение S→W, формируется автоматически при создании ИСП
+/// по принципу FIFO (п.7-9 ТЗ по остаткам). Статусы — та же четвёрка, что у
+/// ВХП/ИСП/Инвентаризации, через общий DocumentNumberingService/StatusChange.
+model MovementTask {
+  id                 Int                @id @default(autoincrement())
+  number             String             @unique @db.NVarChar(50) // "ПРМ-123"
+  // Без @relation — как sourceIncomingDeliveryId у OutgoingDelivery: чисто
+  // информационная ссылка на ИСП, породившую задание.
+  outgoingDeliveryId Int?
+  partnerId          Int // тоже без @relation — иначе ещё один каскадный путь через Partner
+  status             String             @default("Создана") @db.NVarChar(20)
+  createdBy          String             @db.NVarChar(255)
+  createdAt          DateTime           @default(now()) @db.DateTime2
+  updatedAt          DateTime           @updatedAt @db.DateTime2
+  items              MovementTaskItem[]
+
+  @@index([outgoingDeliveryId])
+  @@map("MovementTasks")
+}
+
+model MovementTaskItem {
+  id                     Int          @id @default(autoincrement())
+  taskId                 Int
+  article                String       @db.NVarChar(100)
+  name                   String?      @db.NVarChar(500)
+  // Все ссылки ниже — информационные Int без @relation (тот же приём, что и
+  // везде в этом файле для полей, торчащих в сторону Partner-графа).
+  skuId                  Int?
+  outgoingDeliveryItemId Int?
+  sourceAddressId        Int? // адрес-источник в зоне S, подобранный по FIFO
+  incomingDeliveryItemId Int? // партия-источник
+  targetAddressId        Int? // адрес в зоне W, куда фактически переместили (заполняется при подтверждении)
+  quantity               Int
+  status                 String       @default("Ожидает") @db.NVarChar(20) // Ожидает | Перемещено
+  confirmedBy            String?      @db.NVarChar(255)
+  confirmedAt            DateTime?    @db.DateTime2
+  task                   MovementTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("MovementTaskItems")
 }
 
 model Shipment {
@@ -404,16 +490,16 @@ model PartnerHistory {
 
 /// Сквозная нумерация по типу документа: lastNumber инкрементится атомарно.
 model DocumentCounter {
-  docType    String @id @db.NVarChar(20) // INCOMING | OUTGOING | INVENTORY
+  docType    String @id @db.NVarChar(20) // INCOMING | OUTGOING | INVENTORY | MOVEMENT
   lastNumber Int    @default(0)
 
   @@map("DocumentCounters")
 }
 
-/// История статусов: кто, когда, на какой статус перевёл документ. Общая для всех трёх типов.
+/// История статусов: кто, когда, на какой статус перевёл документ. Общая для всех типов документов.
 model StatusChange {
   id        Int      @id @default(autoincrement())
-  docType   String   @db.NVarChar(20) // INCOMING | OUTGOING | INVENTORY
+  docType   String   @db.NVarChar(20) // INCOMING | OUTGOING | INVENTORY | MOVEMENT
   docId     Int
   status    String   @db.NVarChar(50)
   changedBy String   @db.NVarChar(255)

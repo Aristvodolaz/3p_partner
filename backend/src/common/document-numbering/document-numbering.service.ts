@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-export type DocType = 'INCOMING' | 'OUTGOING' | 'INVENTORY';
+export type DocType = 'INCOMING' | 'OUTGOING' | 'INVENTORY' | 'MOVEMENT';
 
 const PREFIX: Record<DocType, string> = {
   INCOMING: 'ВХП',
   OUTGOING: 'ИСП',
   INVENTORY: 'ИНВ',
+  MOVEMENT: 'ПРМ',
 };
 
 /**

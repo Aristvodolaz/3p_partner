@@ -6,6 +6,8 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DocumentNumberingService } from '../../common/document-numbering/document-numbering.service';
+import { StorageService } from '../storage/storage.service';
+import { MovementTasksService } from '../movement-tasks/movement-tasks.service';
 import {
   CreateOutgoingDeliveryDto,
   OutgoingDeliveryItemDto,
@@ -46,6 +48,8 @@ export class OutgoingDeliveriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly numbering: DocumentNumberingService,
+    private readonly storage: StorageService,
+    private readonly movementTasks: MovementTasksService,
   ) {}
 
   async findAll(partnerId?: number, status?: string) {
@@ -95,6 +99,17 @@ export class OutgoingDeliveriesService {
     });
 
     await this.numbering.logStatus('OUTGOING', delivery.id, 'Создана', createdBy);
+
+    // Задание на перемещение S→W по FIFO (см. storage/остатки) — по каждой
+    // позиции подбирает доступные партии из зоны хранения. Если в зоне S
+    // ничего нет — задание просто не создастся, ship() потом это учтёт.
+    await this.movementTasks.createForOutgoing(
+      delivery.id,
+      delivery.partnerId,
+      delivery.items.map((i) => ({ id: i.id, article: i.article, name: i.name, skuId: i.skuId, quantity: i.quantity })),
+      createdBy,
+    );
+
     return this.recalculate(delivery.id);
   }
 
@@ -201,11 +216,29 @@ export class OutgoingDeliveriesService {
       throw new ConflictException(`Заявка уже в статусе «${delivery.status}»`);
     }
 
-    const itemIds = new Set(delivery.items.map((i) => i.id));
+    const itemsById = new Map(delivery.items.map((i) => [i.id, i]));
     for (const line of dto.items) {
-      if (!itemIds.has(line.itemId)) {
+      if (!itemsById.has(line.itemId)) {
         throw new NotFoundException(`Позиция #${line.itemId} не относится к этой заявке`);
       }
+    }
+
+    // Гейт п.9 ТЗ по остаткам: товар, не перемещённый в зону обработки (W),
+    // недоступен для отгрузки — сначала нужно выполнить задание на
+    // перемещение (movement-tasks) на ТСД.
+    const linesToShip = dto.items.filter((line) => itemsById.get(line.itemId)!.factQuantity == null);
+    const shortages: string[] = [];
+    for (const line of linesToShip) {
+      const item = itemsById.get(line.itemId)!;
+      const available = await this.storage.balanceInZone(delivery.partnerId, item.article, 'W');
+      if (available < line.factQuantity) {
+        shortages.push(`«${item.article}» — в зоне обработки доступно ${available}, нужно ${line.factQuantity}`);
+      }
+    }
+    if (shortages.length > 0) {
+      throw new ConflictException(
+        `Недостаточно товара в зоне обработки, сначала выполните перемещение: ${shortages.join('; ')}`,
+      );
     }
 
     await this.prisma.$transaction(
@@ -216,6 +249,22 @@ export class OutgoingDeliveriesService {
         }),
       ),
     );
+
+    // Реально списываем из зоны W по FIFO — без этого остаток в W не
+    // уменьшался бы, и повторная отгрузка того же товара ничем не была бы
+    // ограничена (см. StorageService.consumeFromZone).
+    for (const line of linesToShip) {
+      const item = itemsById.get(line.itemId)!;
+      await this.storage.consumeFromZone({
+        partnerId: delivery.partnerId,
+        article: item.article,
+        zoneType: 'W',
+        quantity: line.factQuantity,
+        docType: 'OUTGOING',
+        docId: delivery.id,
+        createdBy: executedBy,
+      });
+    }
 
     const wasCreated = delivery.status === 'Создана';
     const refreshed = await this.findOne(id);

@@ -30,6 +30,19 @@ class BalanceAddressQueryDto {
   partnerId?: number;
 }
 
+class ReportQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  partnerId?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  article?: string;
+}
+
 class HistoryQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -87,5 +100,11 @@ export class StorageController {
   @ApiOperation({ summary: 'История перемещений' })
   history(@Query() query: HistoryQueryDto) {
     return this.storageService.history(query);
+  }
+
+  @Get('report')
+  @ApiOperation({ summary: 'Отчёт по остаткам: партнёр, артикул, партия поступления, адрес, количество' })
+  report(@Query() query: ReportQueryDto) {
+    return this.storageService.report(query);
   }
 }

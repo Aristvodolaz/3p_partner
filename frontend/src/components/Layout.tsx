@@ -8,6 +8,7 @@ import {
   UserCog,
   FileSpreadsheet,
   ListChecks,
+  Boxes,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,7 @@ const NRP_NAV = [
   { to: '/incoming-deliveries', label: 'ВХП', icon: Truck },
   { to: '/outgoing-deliveries', label: 'ИСП', icon: Ship },
   { to: '/inventory', label: 'Инвентаризация', icon: ListChecks },
+  { to: '/storage', label: 'Остатки', icon: Boxes },
   { to: '/acts', label: 'Акты', icon: FileSpreadsheet },
   { to: '/employees', label: 'Сотрудники', icon: UserCog },
 ];

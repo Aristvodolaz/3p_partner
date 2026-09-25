@@ -16,6 +16,8 @@ import { DocumentNumberingModule } from './common/document-numbering/document-nu
 import { IncomingDeliveriesModule } from './modules/incoming-deliveries/incoming-deliveries.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { OutgoingDeliveriesModule } from './modules/outgoing-deliveries/outgoing-deliveries.module';
+import { WarehouseZonesModule } from './modules/warehouse-zones/warehouse-zones.module';
+import { MovementTasksModule } from './modules/movement-tasks/movement-tasks.module';
 
 @Module({
   imports: [
@@ -29,7 +31,9 @@ import { OutgoingDeliveriesModule } from './modules/outgoing-deliveries/outgoing
     RequestsModule,
     DocumentsModule,
     ReceivingModule,
+    WarehouseZonesModule,
     StorageModule,
+    MovementTasksModule,
     ShippingModule,
     PackingModule,
     ActsModule,

@@ -9,6 +9,7 @@ import { RequestsPage } from '@/pages/RequestsPage';
 import { IncomingDeliveriesPage } from '@/pages/IncomingDeliveriesPage';
 import { OutgoingDeliveriesPage } from '@/pages/OutgoingDeliveriesPage';
 import { InventoryPage } from '@/pages/InventoryPage';
+import { StoragePage } from '@/pages/StoragePage';
 import { EmployeesPage } from '@/pages/EmployeesPage';
 import { ActsPage } from '@/pages/ActsPage';
 
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/skus" element={<SkusPage />} />
             <Route path="/tariffs" element={<TariffsPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/storage" element={<StoragePage />} />
             <Route path="/employees" element={<EmployeesPage />} />
             <Route path="/acts" element={<ActsPage />} />
           </Route>

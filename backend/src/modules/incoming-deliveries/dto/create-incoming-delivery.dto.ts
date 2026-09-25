@@ -105,6 +105,14 @@ export class ReceiveIncomingDeliveryItemDto {
   @IsInt()
   @Min(0)
   factQuantity: number;
+
+  @ApiPropertyOptional({
+    description: 'Адрес зоны приёмки (I), куда фактически разместили товар — если указан, пишется движение по остаткам',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  addressCode?: string;
 }
 
 export class ReceiveIncomingDeliveryDto {

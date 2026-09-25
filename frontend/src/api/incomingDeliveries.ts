@@ -49,7 +49,7 @@ export const incomingDeliveriesApi = {
 
   receive: async (
     id: number,
-    items: { itemId: number; factQuantity: number }[],
+    items: { itemId: number; factQuantity: number; addressCode?: string }[],
   ): Promise<IncomingDelivery> => {
     const { data } = await api.post(`/incoming-deliveries/${id}/receive`, { items });
     return data;
