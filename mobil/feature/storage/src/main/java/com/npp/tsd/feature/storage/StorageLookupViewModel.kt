@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.npp.tsd.core.data.WarehouseRepository
 import com.npp.tsd.core.designsystem.UiState
+import com.npp.tsd.core.model.MoveItemBody
 import com.npp.tsd.core.model.StorageBalanceByArticle
 import com.npp.tsd.core.model.StorageMovement
 import com.npp.tsd.core.network.friendlyMessage
@@ -22,6 +23,12 @@ class StorageLookupViewModel(private val warehouseRepository: WarehouseRepositor
 
     private val _history = MutableStateFlow<List<StorageMovement>>(emptyList())
     val history: StateFlow<List<StorageMovement>> = _history.asStateFlow()
+
+    private val _saving = MutableStateFlow(false)
+    val saving: StateFlow<Boolean> = _saving.asStateFlow()
+
+    private val _actionError = MutableStateFlow<String?>(null)
+    val actionError: StateFlow<String?> = _actionError.asStateFlow()
 
     init {
         loadHistory()
@@ -52,5 +59,28 @@ class StorageLookupViewModel(private val warehouseRepository: WarehouseRepositor
                 // история — вспомогательная лента, ошибку молча игнорируем при неудаче
             }
         }
+    }
+
+    /** Перемещение с текущего искомого адреса на другой — например, из зоны приёмки в хранение. */
+    fun move(partnerId: Int, article: String, toAddress: String, quantity: Int) {
+        val fromAddress = _address.value.trim()
+        if (fromAddress.isEmpty()) return
+        viewModelScope.launch {
+            _saving.value = true
+            _actionError.value = null
+            try {
+                warehouseRepository.moveItem(MoveItemBody(partnerId, article, fromAddress, toAddress, quantity))
+                search()
+                loadHistory()
+            } catch (e: Exception) {
+                _actionError.value = e.friendlyMessage("Не удалось переместить товар")
+            } finally {
+                _saving.value = false
+            }
+        }
+    }
+
+    fun clearError() {
+        _actionError.value = null
     }
 }

@@ -2,6 +2,7 @@ package com.npp.tsd.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.FactCheck
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
@@ -32,6 +33,7 @@ import com.npp.tsd.AppContainer
 import com.npp.tsd.core.model.EmployeeInfo
 import com.npp.tsd.feature.incoming.IncomingDeliveriesListScreen
 import com.npp.tsd.feature.inventory.InventoryTasksListScreen
+import com.npp.tsd.feature.movementtasks.MovementTasksListScreen
 import com.npp.tsd.feature.outgoing.OutgoingDeliveriesListScreen
 import com.npp.tsd.feature.settings.SettingsScreen
 import com.npp.tsd.feature.storage.StorageLookupScreen
@@ -44,12 +46,14 @@ private object Routes {
     const val INCOMING = "incoming"
     const val OUTGOING = "outgoing"
     const val INVENTORY = "inventory"
+    const val MOVEMENT = "movement"
     const val STORAGE_LOOKUP = "storage_lookup"
     const val SETTINGS = "settings"
 
     const val INCOMING_WORKSPACE = "incoming/{deliveryId}/{deliveryNumber}"
     const val OUTGOING_WORKSPACE = "outgoing/{deliveryId}/{deliveryNumber}"
     const val INVENTORY_WORKSPACE = "inventory/{taskId}/{taskNumber}"
+    const val MOVEMENT_TASK = "movement/{taskId}/{taskNumber}"
 
     fun incomingWorkspace(id: Int, number: String) =
         "incoming/$id/${URLEncoder.encode(number, "UTF-8")}"
@@ -59,6 +63,9 @@ private object Routes {
 
     fun inventoryWorkspace(id: Int, number: String) =
         "inventory/$id/${URLEncoder.encode(number, "UTF-8")}"
+
+    fun movementTask(id: Int, number: String) =
+        "movement/$id/${URLEncoder.encode(number, "UTF-8")}"
 }
 
 private data class BottomTab(val route: String, val label: String, val icon: ImageVector)
@@ -67,6 +74,7 @@ private val bottomTabs = listOf(
     BottomTab(Routes.INCOMING, "ВХП", Icons.Filled.MoveToInbox),
     BottomTab(Routes.OUTGOING, "ИСП", Icons.Filled.LocalShipping),
     BottomTab(Routes.INVENTORY, "Инв.", Icons.Filled.FactCheck),
+    BottomTab(Routes.MOVEMENT, "Перем.", Icons.AutoMirrored.Filled.CompareArrows),
     BottomTab(Routes.STORAGE_LOOKUP, "Склад", Icons.Filled.Inventory2),
     BottomTab(Routes.SETTINGS, "Настройки", Icons.Filled.Settings),
 )
@@ -144,8 +152,18 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
                 )
             }
 
+            composable(Routes.MOVEMENT) {
+                MovementTasksListScreen(
+                    repository = container.movementTasksRepository,
+                    onOpenTask = { id, number -> navController.navigate(Routes.movementTask(id, number)) },
+                )
+            }
+
             composable(Routes.STORAGE_LOOKUP) {
-                StorageLookupScreen(warehouseRepository = container.warehouseRepository)
+                StorageLookupScreen(
+                    warehouseRepository = container.warehouseRepository,
+                    zonesRepository = container.warehouseZonesRepository,
+                )
             }
 
             composable(Routes.SETTINGS) {
@@ -221,6 +239,24 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
                     taskNumber = taskNumber,
                     container = container,
                     employeeName = employee?.fullName ?: "—",
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                Routes.MOVEMENT_TASK,
+                arguments = listOf(
+                    navArgument("taskId") { type = NavType.IntType },
+                    navArgument("taskNumber") { type = NavType.StringType },
+                ),
+            ) { backStackEntry ->
+                val taskId = backStackEntry.arguments?.getInt("taskId") ?: return@composable
+                val taskNumber = backStackEntry.arguments?.getString("taskNumber")
+                    ?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
+                MovementTaskScreen(
+                    taskId = taskId,
+                    taskNumber = taskNumber,
+                    container = container,
                     onBack = { navController.popBackStack() },
                 )
             }

@@ -58,6 +58,7 @@ dependencies {
     implementation(project(":feature:incoming"))
     implementation(project(":feature:outgoing"))
     implementation(project(":feature:inventory"))
+    implementation(project(":feature:movementtasks"))
 
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)

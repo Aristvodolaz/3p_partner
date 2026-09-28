@@ -45,6 +45,7 @@ data class IncomingDeliveriesResponse(
 data class ReceiveIncomingDeliveryItemBody(
     val itemId: Int,
     val factQuantity: Int,
+    val addressCode: String? = null,
 )
 
 @Serializable

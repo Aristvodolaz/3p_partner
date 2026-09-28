@@ -4,6 +4,7 @@ import com.npp.tsd.core.model.AddPackingUnitItemBody
 import com.npp.tsd.core.model.BindParentPalletBody
 import com.npp.tsd.core.model.CreateDocumentBody
 import com.npp.tsd.core.model.CreatePackingUnitBody
+import com.npp.tsd.core.model.ConfirmMovementTaskItemBody
 import com.npp.tsd.core.model.CreateReceiptBody
 import com.npp.tsd.core.model.CreateShipmentBody
 import com.npp.tsd.core.model.CountInventoryTaskBody
@@ -17,6 +18,8 @@ import com.npp.tsd.core.model.LoginBody
 import com.npp.tsd.core.model.LoginResponse
 import com.npp.tsd.core.model.MarkShippedBody
 import com.npp.tsd.core.model.MoveItemBody
+import com.npp.tsd.core.model.MovementTask
+import com.npp.tsd.core.model.MovementTasksResponse
 import com.npp.tsd.core.model.OutgoingDelivery
 import com.npp.tsd.core.model.OutgoingDeliveriesResponse
 import com.npp.tsd.core.model.PartnerRequest
@@ -32,6 +35,7 @@ import com.npp.tsd.core.model.RequestsResponse
 import com.npp.tsd.core.model.Shipment
 import com.npp.tsd.core.model.ShipOutgoingDeliveryBody
 import com.npp.tsd.core.model.StatusChangeEntry
+import com.npp.tsd.core.model.StorageAddress
 import com.npp.tsd.core.model.StorageBalanceByAddress
 import com.npp.tsd.core.model.StorageBalanceByArticle
 import com.npp.tsd.core.model.StorageMovement
@@ -237,4 +241,36 @@ interface TsdApi {
         @Path("id") id: Int,
         @Body body: CountInventoryTaskBody,
     ): InventoryTask
+
+    // --- Зоны и адреса ---
+
+    @GET("warehouse-zones/addresses")
+    suspend fun getStorageAddresses(
+        @Query("zoneType") zoneType: String? = null,
+        @Query("search") search: String? = null,
+    ): List<StorageAddress>
+
+    // --- Задания на перемещение (FIFO) ---
+
+    @GET("movement-tasks")
+    suspend fun getMovementTasks(
+        @Query("partnerId") partnerId: Int? = null,
+        @Query("status") status: String? = null,
+    ): MovementTasksResponse
+
+    @GET("movement-tasks/{id}")
+    suspend fun getMovementTask(@Path("id") id: Int): MovementTask
+
+    @GET("movement-tasks/{id}/history")
+    suspend fun getMovementTaskHistory(@Path("id") id: Int): List<StatusChangeEntry>
+
+    @PATCH("movement-tasks/{id}/items/{itemId}/confirm")
+    suspend fun confirmMovementTaskItem(
+        @Path("id") id: Int,
+        @Path("itemId") itemId: Int,
+        @Body body: ConfirmMovementTaskItemBody,
+    ): MovementTask
+
+    @POST("movement-tasks/{id}/cancel")
+    suspend fun cancelMovementTask(@Path("id") id: Int): MovementTask
 }

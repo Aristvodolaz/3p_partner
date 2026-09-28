@@ -4,11 +4,13 @@ import android.content.Context
 import com.npp.tsd.core.data.AuthRepository
 import com.npp.tsd.core.data.IncomingDeliveriesRepository
 import com.npp.tsd.core.data.InventoryRepository
+import com.npp.tsd.core.data.MovementTasksRepository
 import com.npp.tsd.core.data.OutgoingDeliveriesRepository
 import com.npp.tsd.core.data.RequestsRepository
 import com.npp.tsd.core.data.SessionRepository
 import com.npp.tsd.core.data.SettingsRepository
 import com.npp.tsd.core.data.WarehouseRepository
+import com.npp.tsd.core.data.WarehouseZonesRepository
 
 /** Композиционный корень: единственное место, где создаются репозитории. */
 class AppContainer(context: Context) {
@@ -18,6 +20,8 @@ class AppContainer(context: Context) {
     val incomingDeliveriesRepository = IncomingDeliveriesRepository(settingsRepository)
     val outgoingDeliveriesRepository = OutgoingDeliveriesRepository(settingsRepository)
     val inventoryRepository = InventoryRepository(settingsRepository)
+    val warehouseZonesRepository = WarehouseZonesRepository(settingsRepository)
+    val movementTasksRepository = MovementTasksRepository(settingsRepository)
     val sessionRepository = SessionRepository(context.applicationContext)
     val authRepository = AuthRepository(settingsRepository, sessionRepository)
 }

@@ -82,6 +82,7 @@ fun IncomingWorkspaceScreen(
                 IncomingTab.RECEIVING -> IncomingReceivingScreen(
                     deliveryId = deliveryId,
                     repository = container.incomingDeliveriesRepository,
+                    zonesRepository = container.warehouseZonesRepository,
                     employeeName = employeeName,
                 )
             }

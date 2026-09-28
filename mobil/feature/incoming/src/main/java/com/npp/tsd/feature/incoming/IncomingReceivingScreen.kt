@@ -33,7 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.npp.tsd.core.data.IncomingDeliveriesRepository
+import com.npp.tsd.core.data.WarehouseZonesRepository
 import com.npp.tsd.core.designsystem.UiState
 import com.npp.tsd.core.designsystem.component.AppCard
 import com.npp.tsd.core.designsystem.component.EmptyState
@@ -43,11 +47,13 @@ import com.npp.tsd.core.designsystem.theme.Spacing
 import com.npp.tsd.core.model.IncomingDelivery
 import com.npp.tsd.core.model.IncomingDeliveryItem
 import com.npp.tsd.core.model.ReceiveIncomingDeliveryItemBody
+import com.npp.tsd.core.model.ZoneType
 
 @Composable
 fun IncomingReceivingScreen(
     deliveryId: Int,
     repository: IncomingDeliveriesRepository,
+    zonesRepository: WarehouseZonesRepository,
     employeeName: String,
 ) {
     val vm: IncomingDeliveryViewModel = viewModel(
@@ -57,6 +63,14 @@ fun IncomingReceivingScreen(
     val state by vm.state.collectAsState()
     val saving by vm.saving.collectAsState()
     val actionError by vm.actionError.collectAsState()
+
+    // Адреса зоны приёмки — подсказка для поля "Адрес": вводится сканером
+    // (работает как клавиатура) или вручную, без камеры (см. core:designsystem).
+    var receivingAddresses by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        runCatching { zonesRepository.getAddresses(zoneType = ZoneType.RECEIVING) }
+            .onSuccess { receivingAddresses = it.map { a -> a.code } }
+    }
 
     val snackbarHost = remember { SnackbarHostState() }
     LaunchedEffect(actionError) {
@@ -77,6 +91,7 @@ fun IncomingReceivingScreen(
                 delivery = s.data,
                 saving = saving,
                 employeeName = employeeName,
+                receivingAddresses = receivingAddresses,
                 onSubmit = { items -> vm.submitReceipt(items) },
                 modifier = Modifier.padding(padding),
             )
@@ -90,6 +105,7 @@ private data class ReceivingRow(
     val name: String,
     val quantity: Int,
     var factQty: String,
+    var addressCode: String,
 )
 
 @Composable
@@ -97,6 +113,7 @@ private fun ReceivingForm(
     delivery: IncomingDelivery,
     saving: Boolean,
     employeeName: String,
+    receivingAddresses: List<String>,
     onSubmit: (List<ReceiveIncomingDeliveryItemBody>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,7 +122,7 @@ private fun ReceivingForm(
 
     val rows = remember(pending) {
         pending.map {
-            ReceivingRow(it.id, it.article, it.name ?: it.article, it.quantity, it.quantity.toString())
+            ReceivingRow(it.id, it.article, it.name ?: it.article, it.quantity, it.quantity.toString(), "")
         }.toMutableStateList()
     }
 
@@ -131,18 +148,28 @@ private fun ReceivingForm(
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(top = Spacing.lg, bottom = Spacing.xs),
                 )
+                Text(
+                    "Укажите адрес зоны приёмки, куда фактически размещаете товар — " +
+                        "дальше переместите его в хранение через «Склад».",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
         if (pending.isNotEmpty()) {
-            items(rows.size) { idx -> PendingRow(rows[idx]) }
+            items(rows.size) { idx -> PendingRow(rows[idx], receivingAddresses) }
             item {
                 Button(
                     enabled = !saving,
                     onClick = {
                         val bodies = rows.mapNotNull {
                             val qty = it.factQty.toIntOrNull() ?: return@mapNotNull null
-                            ReceiveIncomingDeliveryItemBody(it.itemId, qty)
+                            ReceiveIncomingDeliveryItemBody(
+                                itemId = it.itemId,
+                                factQuantity = qty,
+                                addressCode = it.addressCode.trim().ifBlank { null },
+                            )
                         }
                         onSubmit(bodies)
                     },
@@ -168,8 +195,9 @@ private fun ReceivedRow(item: IncomingDeliveryItem) {
 }
 
 @Composable
-private fun PendingRow(row: ReceivingRow) {
+private fun PendingRow(row: ReceivingRow, receivingAddresses: List<String>) {
     var factQty by remember { mutableStateOf(row.factQty) }
+    var addressCode by remember { mutableStateOf(row.addressCode) }
     AppCard(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs), contentPadding = PaddingValues(Spacing.sm)) {
         Text("${row.article} — ${row.name}", style = MaterialTheme.typography.bodyMedium)
         Text(
@@ -190,8 +218,35 @@ private fun PendingRow(row: ReceivingRow) {
                 },
                 label = { Text("Факт") },
                 singleLine = true,
+                modifier = Modifier.width(120.dp),
+            )
+            OutlinedTextField(
+                value = addressCode,
+                onValueChange = {
+                    addressCode = it
+                    row.addressCode = it
+                },
+                label = { Text("Адрес приёмки") },
+                singleLine = true,
                 modifier = Modifier.width(160.dp),
             )
+        }
+        if (receivingAddresses.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().padding(top = Spacing.xs).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                receivingAddresses.forEach { code ->
+                    FilterChip(
+                        selected = addressCode == code,
+                        onClick = {
+                            addressCode = code
+                            row.addressCode = code
+                        },
+                        label = { Text(code) },
+                    )
+                }
+            }
         }
     }
 }
