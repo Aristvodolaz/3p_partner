@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,7 @@ fun MovementTasksListScreen(
     val vm: MovementTasksListViewModel = viewModel(
         factory = viewModelFactory { initializer { MovementTasksListViewModel(repository) } },
     )
+    LaunchedEffect(Unit) { vm.load() }
     val state by vm.state.collectAsState()
     val showCompleted by vm.showCompleted.collectAsState()
 

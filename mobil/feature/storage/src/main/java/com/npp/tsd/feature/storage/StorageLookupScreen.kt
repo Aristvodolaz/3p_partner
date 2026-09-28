@@ -74,6 +74,7 @@ fun StorageLookupScreen(warehouseRepository: WarehouseRepository, zonesRepositor
     LaunchedEffect(Unit) {
         runCatching { zonesRepository.getAddresses() }.onSuccess { allAddresses = it.map { a -> a.code } }
     }
+    LaunchedEffect(Unit) { vm.loadHistory() }
 
     var moveTarget by remember { mutableStateOf<StorageBalanceByArticle?>(null) }
 
