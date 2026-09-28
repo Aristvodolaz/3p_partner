@@ -44,28 +44,30 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2.5">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4 h-16">
+            <div className="flex items-center gap-2.5 shrink-0">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary-900/20">
                 <span className="font-display font-semibold text-white text-[15px] leading-none">
                   3P
                 </span>
               </div>
-              <div className="leading-none">
+              <div className="leading-none hidden md:block">
                 <span className="font-display font-semibold text-gray-900 text-[15px] tracking-tight">
                   Partner
                 </span>
               </div>
             </div>
-            <nav className="flex items-center gap-1">
+
+            <nav className="flex items-center gap-0.5 overflow-x-auto scrollbar-thin-x min-w-0">
               {navItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
+                  title={label}
                   className={({ isActive }) =>
                     cn(
-                      'relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'relative flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors',
                       isActive
                         ? 'text-primary'
                         : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100/80',
@@ -77,25 +79,26 @@ export function Layout() {
                       {isActive && (
                         <span className="absolute inset-0 rounded-lg bg-primary-50 animate-scale-in" />
                       )}
-                      <Icon size={16} className="relative" />
-                      <span className="relative hidden sm:inline">{label}</span>
+                      <Icon size={15} className="relative shrink-0" />
+                      <span className="relative hidden lg:inline">{label}</span>
                     </>
                   )}
                 </NavLink>
               ))}
             </nav>
-            <div className="flex items-center gap-3 pl-3 ml-2 border-l border-gray-200">
-              <div className="hidden sm:block text-right">
-                <div className="text-sm font-medium text-gray-900 leading-tight">
+
+            <div className="flex items-center gap-3 pl-3 ml-auto border-l border-gray-200 shrink-0">
+              <div className="hidden sm:block text-right leading-tight max-w-[180px]">
+                <div className="text-sm font-medium text-gray-900 truncate">
                   {employee?.fullName}
                 </div>
-                <div className="text-xs text-gray-400 leading-tight tracking-wide uppercase">
+                <div className="text-[11px] text-gray-400 tracking-wide uppercase">
                   {employee?.role ?? 'роль не назначена'}
                 </div>
               </div>
               <button
                 onClick={handleLogout}
-                className="btn-ghost text-xs p-2"
+                className="btn-ghost text-xs p-2 shrink-0"
                 title="Выйти"
               >
                 <LogOut size={16} />
@@ -105,7 +108,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+      <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
         <Outlet />
       </main>
     </div>
