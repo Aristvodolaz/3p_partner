@@ -30,10 +30,6 @@ class StorageLookupViewModel(private val warehouseRepository: WarehouseRepositor
     private val _actionError = MutableStateFlow<String?>(null)
     val actionError: StateFlow<String?> = _actionError.asStateFlow()
 
-    init {
-        loadHistory()
-    }
-
     fun setAddress(value: String) {
         _address.value = value
     }

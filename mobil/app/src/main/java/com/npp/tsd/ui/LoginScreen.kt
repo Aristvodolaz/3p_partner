@@ -48,8 +48,8 @@ import com.npp.tsd.core.designsystem.theme.Blue40
 import com.npp.tsd.core.designsystem.theme.DisplayFontFamily
 import com.npp.tsd.core.designsystem.theme.Gold40
 import com.npp.tsd.core.model.EmployeeInfo
+import com.npp.tsd.core.network.friendlyMessage
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 @Composable
 fun LoginScreen(
@@ -70,10 +70,8 @@ fun LoginScreen(
             try {
                 val employee = authRepository.login(employeeId.trim())
                 onLoggedIn(employee)
-            } catch (e: IOException) {
-                error = "Не удалось подключиться к серверу. Проверьте сеть и адрес сервера в Настройках."
             } catch (e: Exception) {
-                error = e.message ?: "Не удалось войти"
+                error = e.friendlyMessage("Не удалось войти. Проверьте сеть и адрес сервера в Настройках.")
             } finally {
                 isLoading = false
             }

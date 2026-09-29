@@ -20,10 +20,6 @@ class IncomingDeliveriesListViewModel(private val repository: IncomingDeliveries
     private val _showCompleted = MutableStateFlow(false)
     val showCompleted: StateFlow<Boolean> = _showCompleted.asStateFlow()
 
-    init {
-        load()
-    }
-
     fun toggleShowCompleted() {
         _showCompleted.value = !_showCompleted.value
         load()

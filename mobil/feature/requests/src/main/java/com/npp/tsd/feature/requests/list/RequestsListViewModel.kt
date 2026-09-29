@@ -22,10 +22,6 @@ class RequestsListViewModel(private val repository: RequestsRepository) : ViewMo
     private val _search = MutableStateFlow("")
     val search: StateFlow<String> = _search.asStateFlow()
 
-    init {
-        load()
-    }
-
     fun setSearch(value: String) {
         _search.value = value
     }
