@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Ban,
   ClipboardList,
+  Eye,
   FileSpreadsheet,
   History,
   PackageCheck,
@@ -54,6 +55,7 @@ export function IncomingDeliveriesPage() {
   const [partnerId, setPartnerId] = useState<number | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState<IncomingDelivery | null>(null);
+  const [viewTarget, setViewTarget] = useState<IncomingDelivery | null>(null);
   const [historyTarget, setHistoryTarget] = useState<IncomingDelivery | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IncomingDelivery | null>(null);
   const [cancelTarget, setCancelTarget] = useState<IncomingDelivery | null>(null);
@@ -141,8 +143,15 @@ export function IncomingDeliveriesPage() {
             <TBody>
               {deliveries.map((d) => (
                 <TR key={d.id}>
-                  <TD className="font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
-                    {d.number}
+                  <TD className="font-mono text-[13px] font-medium whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => setViewTarget(d)}
+                      className="text-gray-900 hover:text-primary hover:underline decoration-dotted underline-offset-2"
+                      title="Просмотр позиций"
+                    >
+                      {d.number}
+                    </button>
                     {d.isCrossDock && (
                       <span className="ml-2 text-xs text-amber-600 align-middle" title="Кросс-докинг">
                         КД
@@ -163,6 +172,9 @@ export function IncomingDeliveriesPage() {
                   </TD>
                   <TD align="right">
                     <div className="flex gap-1 justify-end">
+                      <Button variant="ghost" size="icon" onClick={() => setViewTarget(d)} title="Просмотр позиций">
+                        <Eye size={14} />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => setHistoryTarget(d)} title="История статусов">
                         <History size={14} />
                       </Button>
@@ -201,6 +213,8 @@ export function IncomingDeliveriesPage() {
       )}
 
       <IncomingDeliveryImportDialog open={importOpen} onClose={() => setImportOpen(false)} partners={partners} />
+
+      {viewTarget && <ViewDialog delivery={viewTarget} onClose={() => setViewTarget(null)} />}
 
       {receiveTarget && (
         <ReceiveDialog delivery={receiveTarget} onClose={() => setReceiveTarget(null)} />
@@ -480,6 +494,75 @@ function ReceiveDialog({ delivery, onClose }: { delivery: IncomingDelivery; onCl
           </Button>
           <Button onClick={handleSubmit} loading={receive.isPending}>
             Подтвердить приёмку
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function ViewDialog({ delivery, onClose }: { delivery: IncomingDelivery; onClose: () => void }) {
+  return (
+    <Dialog open onClose={onClose} title={`Позиции — ${delivery.number}`} size="xl">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-gray-600">
+          <span>
+            Партнёр: <span className="text-gray-900">{delivery.partner.name}</span>
+          </span>
+          <span>
+            Статус: <Badge tone={statusTone(delivery.status)}>{delivery.status}</Badge>
+          </span>
+          <span>
+            Склад: <span className="text-gray-900">{delivery.warehouseCode ?? '—'}</span>
+          </span>
+          <span>
+            Дата план:{' '}
+            <span className="text-gray-900">
+              {delivery.plannedDate ? formatDateShort(delivery.plannedDate) : '—'}
+            </span>
+          </span>
+        </div>
+
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>Артикул</TH>
+              <TH>Наименование</TH>
+              <TH>ШК</TH>
+              <TH align="center">План</TH>
+              <TH align="center">Факт</TH>
+              <TH align="right">Вес</TH>
+              <TH align="right">Объём</TH>
+            </THead>
+            <TBody>
+              {delivery.items.map((item) => (
+                <TR key={item.id}>
+                  <TD className="font-mono text-xs whitespace-nowrap">{item.article}</TD>
+                  <TD>{item.name ?? '—'}</TD>
+                  <TD className="font-mono text-xs text-gray-500">{item.barcode ?? '—'}</TD>
+                  <TD align="center">{item.quantity}</TD>
+                  <TD align="center">
+                    {item.factQuantity != null ? (
+                      item.factQuantity
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TD>
+                  <TD align="right" className="text-gray-500">
+                    {item.weight != null ? item.weight : '—'}
+                  </TD>
+                  <TD align="right" className="text-gray-500">
+                    {item.volume != null ? item.volume : '—'}
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </TableContainer>
+
+        <div className="flex justify-end pt-2 border-t border-gray-100">
+          <Button variant="secondary" onClick={onClose}>
+            Закрыть
           </Button>
         </div>
       </div>
