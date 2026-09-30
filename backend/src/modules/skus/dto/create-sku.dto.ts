@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -65,12 +66,14 @@ export class CreateSkuDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   sumOfSides?: number;
 
   @ApiPropertyOptional({ description: 'Вес, кг' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   weight?: number;
 
   @ApiPropertyOptional({ description: 'Требования заказчика' })
@@ -88,24 +91,28 @@ export class CreateSkuDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(0)
   boxQuant?: number;
 
   @ApiPropertyOptional({ description: 'Квант паллетный' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(0)
   palletQuant?: number;
 
   @ApiPropertyOptional({ description: 'Затраты на допупаковку 1 ед., руб.' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   packCostUnit?: number;
 
   @ApiPropertyOptional({ description: 'Затраты на допупаковку 1 короб, руб.' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   packCostBox?: number;
 
   @ApiPropertyOptional({ description: 'Разрешить микс разных артикулов в одном коробе при упаковке' })

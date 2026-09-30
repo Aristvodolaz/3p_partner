@@ -7,18 +7,26 @@ import { SPECIAL_MARKS_PRESETS } from '@/types/sku';
 import { useCoefficients } from '@/hooks/useSkus';
 import { calcEffectiveTariff, getSizeCoefficient } from '@/lib/tariffCalc';
 
+const nonNegativeNumberString = z
+  .string()
+  .optional()
+  .refine(
+    (s) => !s?.trim() || (Number.isFinite(Number(s.replace(',', '.'))) && Number(s.replace(',', '.')) >= 0),
+    'Число не может быть отрицательным',
+  );
+
 const schema = z.object({
   article: z.string().min(1, 'Обязательное поле').max(100),
   name: z.string().min(1, 'Обязательное поле').max(500),
   barcode: z.string().max(100).optional(),
   color: z.string().max(100).optional(),
   shelfLife: z.string().max(100).optional(),
-  sumOfSides: z.string().optional(),
-  weight: z.string().optional(),
-  boxQuant: z.string().optional(),
-  palletQuant: z.string().optional(),
-  packCostUnit: z.string().optional(),
-  packCostBox: z.string().optional(),
+  sumOfSides: nonNegativeNumberString,
+  weight: nonNegativeNumberString,
+  boxQuant: nonNegativeNumberString,
+  palletQuant: nonNegativeNumberString,
+  packCostUnit: nonNegativeNumberString,
+  packCostBox: nonNegativeNumberString,
   clientRequirements: z.string().optional(),
 });
 
