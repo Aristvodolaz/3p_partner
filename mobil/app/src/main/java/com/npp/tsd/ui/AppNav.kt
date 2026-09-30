@@ -14,6 +14,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.npp.tsd.AppContainer
 import com.npp.tsd.core.model.EmployeeInfo
+import com.npp.tsd.core.network.SessionHolder
 import com.npp.tsd.feature.incoming.IncomingDeliveriesListScreen
 import com.npp.tsd.feature.inventory.InventoryTasksListScreen
 import com.npp.tsd.feature.movementtasks.MovementTasksListScreen
@@ -86,6 +88,22 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
     val currentRoute = backStackEntry?.destination
     val scope = rememberCoroutineScope()
     var employee by remember { mutableStateOf(initialEmployee) }
+
+    // Токен живёт 12 часов — истечение сессии в течение рабочего дня обычная
+    // ситуация, а не край. Сервер ответил 401 на защищённый эндпоинт — значит
+    // сессия невалидна: разлогиниваем и возвращаем на вход вместо того, чтобы
+    // каждый экран молча падал в непонятную ошибку.
+    LaunchedEffect(Unit) {
+        SessionHolder.sessionExpired.collect {
+            if (employee != null) {
+                container.authRepository.logout()
+                employee = null
+                navController.navigate(Routes.LOGIN) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+    }
 
     val showBottomBar = employee != null &&
         bottomTabs.any { tab -> currentRoute?.hierarchy?.any { it.route == tab.route } == true }

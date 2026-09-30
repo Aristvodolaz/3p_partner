@@ -10,4 +10,5 @@ dependencies {
     api(libs.okhttp.core)
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
+    api(libs.kotlinx.coroutines.core)
 }

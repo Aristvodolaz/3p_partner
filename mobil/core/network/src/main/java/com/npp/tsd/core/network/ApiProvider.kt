@@ -32,6 +32,7 @@ object ApiProvider {
             .readTimeout(20, TimeUnit.SECONDS)
             .writeTimeout(20, TimeUnit.SECONDS)
             .addInterceptor(AuthInterceptor())
+            .addInterceptor(SessionExpiryInterceptor())
             .addInterceptor(RetryInterceptor())
             .addInterceptor(logging)
             .build()
