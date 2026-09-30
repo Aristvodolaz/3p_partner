@@ -5,6 +5,20 @@ import { useOutgoingDeliveries } from '@/hooks/useOutgoingDeliveries';
 import { outgoingTotal } from '@/types/outgoingDelivery';
 import { useActs, useGenerateAct } from '@/hooks/useActs';
 import { exportActToExcel } from '@/lib/exportAct';
+import {
+  PageHeader,
+  Button,
+  Select,
+  Input,
+  Field,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import { ACT_TYPE_LABELS, type Act, type ActType } from '@/types/act';
 
 const ACT_TYPES: ActType[] = ['REQUEST', 'ON_DEMAND', 'MONTHLY'];
@@ -49,24 +63,21 @@ export function ActsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Акты выполненных услуг</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Расчёт стоимости по ИСП, по запросу партнёра или за месяц
-        </p>
-      </div>
+      <PageHeader
+        title="Акты выполненных услуг"
+        subtitle="Расчёт стоимости по ИСП, по запросу партнёра или за месяц"
+      />
 
       <div className="card p-5 mb-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="label">Партнёр</label>
-            <select
+          <Field label="Партнёр" htmlFor="act-partner">
+            <Select
+              id="act-partner"
               value={partnerId ?? ''}
               onChange={(e) => {
                 setPartnerId(e.target.value ? Number(e.target.value) : undefined);
                 setRequestIds([]);
               }}
-              className="input"
             >
               <option value="">Выберите партнёра</option>
               {partners.map((p) => (
@@ -74,32 +85,26 @@ export function ActsPage() {
                   {p.name}
                 </option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Тип</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as ActType)}
-              className="input"
-            >
+            </Select>
+          </Field>
+          <Field label="Тип" htmlFor="act-type">
+            <Select id="act-type" value={type} onChange={(e) => setType(e.target.value as ActType)}>
               {ACT_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {ACT_TYPE_LABELS[t]}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
           {type === 'MONTHLY' && (
-            <div>
-              <label className="label">Месяц</label>
-              <input
+            <Field label="Месяц" htmlFor="act-month">
+              <Input
+                id="act-month"
                 type="month"
                 value={periodLabel}
                 onChange={(e) => setPeriodLabel(e.target.value)}
-                className="input"
               />
-            </div>
+            </Field>
           )}
         </div>
 
@@ -135,14 +140,10 @@ export function ActsPage() {
           </div>
         )}
 
-        <button
-          className="btn-primary"
-          onClick={handleGenerate}
-          disabled={!canGenerate || generate.isPending}
-        >
+        <Button onClick={handleGenerate} loading={generate.isPending} disabled={!canGenerate}>
           <FileSpreadsheet size={16} />
-          {generate.isPending ? 'Формирование...' : 'Сформировать'}
-        </button>
+          Сформировать
+        </Button>
       </div>
 
       {lastGenerated && (
@@ -151,13 +152,10 @@ export function ActsPage() {
             <h3 className="font-semibold text-gray-900">
               Акт от {new Date(lastGenerated.createdAt).toLocaleDateString('ru-RU')}
             </h3>
-            <button
-              className="btn-secondary text-sm"
-              onClick={() => exportActToExcel(lastGenerated)}
-            >
+            <Button variant="secondary" size="sm" onClick={() => exportActToExcel(lastGenerated)}>
               <FileDown size={14} />
               Экспорт в Excel
-            </button>
+            </Button>
           </div>
           <ActBreakdownTable act={lastGenerated} />
         </div>
@@ -168,48 +166,45 @@ export function ActsPage() {
         {!acts || acts.length === 0 ? (
           <p className="text-sm text-gray-400">Актов пока нет</p>
         ) : (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr className="text-left text-xs text-gray-500">
-                    <th className="px-4 py-3 font-medium">Дата</th>
-                    <th className="px-4 py-3 font-medium">Партнёр</th>
-                    <th className="px-4 py-3 font-medium">Тип</th>
-                    <th className="px-4 py-3 font-medium">Период/заявки</th>
-                    <th className="px-4 py-3 font-medium text-right">Сумма</th>
-                    <th className="px-4 py-3 font-medium text-right">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {acts.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {new Date(a.createdAt).toLocaleDateString('ru-RU')}
-                      </td>
-                      <td className="px-4 py-3">{a.partner?.name ?? a.breakdown.partnerName}</td>
-                      <td className="px-4 py-3">{ACT_TYPE_LABELS[a.type]}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
-                        {a.periodLabel ?? a.requests.map((r) => r.requestNumber).join(', ')}
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        {a.totalAmount.toLocaleString('ru-RU')} ₽
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          className="btn-ghost text-xs p-2"
-                          title="Экспорт в Excel"
-                          onClick={() => exportActToExcel(a)}
-                        >
-                          <FileDown size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <TableContainer>
+            <Table>
+              <THead>
+                <TH>Дата</TH>
+                <TH>Партнёр</TH>
+                <TH>Тип</TH>
+                <TH>Период/заявки</TH>
+                <TH align="right">Сумма</TH>
+                <TH align="right">Действия</TH>
+              </THead>
+              <TBody>
+                {acts.map((a) => (
+                  <TR key={a.id}>
+                    <TD className="whitespace-nowrap">
+                      {new Date(a.createdAt).toLocaleDateString('ru-RU')}
+                    </TD>
+                    <TD>{a.partner?.name ?? a.breakdown.partnerName}</TD>
+                    <TD>{ACT_TYPE_LABELS[a.type]}</TD>
+                    <TD className="text-xs text-gray-500">
+                      {a.periodLabel ?? a.requests.map((r) => r.requestNumber).join(', ')}
+                    </TD>
+                    <TD align="right" className="whitespace-nowrap">
+                      {a.totalAmount.toLocaleString('ru-RU')} ₽
+                    </TD>
+                    <TD align="right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Экспорт в Excel"
+                        onClick={() => exportActToExcel(a)}
+                      >
+                        <FileDown size={14} />
+                      </Button>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </TableContainer>
         )}
       </div>
     </div>

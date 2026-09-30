@@ -11,7 +11,25 @@ import {
   useWarehouseZones,
 } from '@/hooks/useWarehouseZones';
 import { useCancelMovementTask, useMovementTasks } from '@/hooks/useMovementTasks';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  Input,
+  Select,
+  Badge,
+  statusTone,
+  EmptyState,
+  Skeleton,
+  Tabs,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import { ZONE_TYPES, ZONE_TYPE_LABELS, type ZoneType } from '@/types/storage';
 import { formatDate } from '@/lib/utils';
 
@@ -23,47 +41,17 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]['key'];
 
-const STATUS_STYLES: Record<string, string> = {
-  Создана: 'bg-gray-100 text-gray-600 ring-gray-500/10',
-  Процесс: 'bg-blue-50 text-blue-700 ring-blue-600/15',
-  Выполнено: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-  Отмена: 'bg-red-50 text-red-600 ring-red-600/15',
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600 ring-gray-500/10';
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ring-1 ring-inset ${cls}`}>
-      {status}
-    </span>
-  );
-}
-
 export function StoragePage() {
   const [tab, setTab] = useState<TabKey>('report');
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Остатки</h1>
-        <p className="text-sm text-gray-500 mt-1">Остатки по адресам хранения, зоны склада, задания на перемещение</p>
-      </div>
+      <PageHeader
+        title="Остатки"
+        subtitle="Остатки по адресам хранения, зоны склада, задания на перемещение"
+      />
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={TABS} value={tab} onChange={setTab} className="mb-6" />
 
       {tab === 'report' && <ReportTab />}
       {tab === 'zones' && <ZonesTab />}
@@ -83,10 +71,11 @@ function ReportTab() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <select
+        <Select
+          aria-label="Партнёр"
           value={partnerId ?? ''}
           onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : undefined)}
-          className="input sm:max-w-xs"
+          className="sm:max-w-xs"
         >
           <option value="">Все партнёры</option>
           {partners.map((p) => (
@@ -94,59 +83,51 @@ function ReportTab() {
               {p.name}
             </option>
           ))}
-        </select>
-        <input
+        </Select>
+        <Input
+          aria-label="Артикул"
           value={article}
           onChange={(e) => setArticle(e.target.value)}
           placeholder="Артикул..."
-          className="input sm:max-w-xs"
+          className="sm:max-w-xs"
         />
       </div>
 
       {isLoading ? (
-        <div className="card p-5 animate-pulse space-y-3">
+        <div className="card p-5 space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-8" />
           ))}
         </div>
       ) : !rows?.length ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <Package size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">Остатков нет</h3>
-        </div>
+        <EmptyState icon={Package} title="Остатков нет" />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">Партнёр</th>
-                  <th className="px-4 py-3 font-medium">Артикул</th>
-                  <th className="px-4 py-3 font-medium">Партия</th>
-                  <th className="px-4 py-3 font-medium">Адрес</th>
-                  <th className="px-4 py-3 font-medium">Зона</th>
-                  <th className="px-4 py-3 font-medium text-right">Кол-во</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {rows.map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-600">{r.partnerName}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{r.article}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{r.batchNumber ?? '—'}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{r.address}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      {r.zoneType ? ZONE_TYPE_LABELS[r.zoneType] : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium tabular-nums">{r.quantity}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>Партнёр</TH>
+              <TH>Артикул</TH>
+              <TH>Партия</TH>
+              <TH>Адрес</TH>
+              <TH>Зона</TH>
+              <TH align="right">Кол-во</TH>
+            </THead>
+            <TBody>
+              {rows.map((r, i) => (
+                <TR key={i}>
+                  <TD className="text-gray-600">{r.partnerName}</TD>
+                  <TD className="font-mono text-xs">{r.article}</TD>
+                  <TD className="text-xs text-gray-500">{r.batchNumber ?? '—'}</TD>
+                  <TD className="font-mono text-xs">{r.address}</TD>
+                  <TD className="text-xs text-gray-500">
+                    {r.zoneType ? ZONE_TYPE_LABELS[r.zoneType] : '—'}
+                  </TD>
+                  <TD align="right" className="font-medium">{r.quantity}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </TableContainer>
       )}
     </div>
   );
@@ -182,32 +163,35 @@ function ZonesTab() {
       <div className="card p-5">
         <h3 className="font-semibold text-gray-900 mb-3">Зоны</h3>
         <div className="flex gap-2 mb-4">
-          <input
+          <Input
+            aria-label="Код зоны"
             value={zoneForm.code}
             onChange={(e) => setZoneForm((f) => ({ ...f, code: e.target.value }))}
             placeholder="Код"
-            className="input w-24 text-sm"
+            className="w-24 text-sm"
           />
-          <input
+          <Input
+            aria-label="Наименование зоны"
             value={zoneForm.name}
             onChange={(e) => setZoneForm((f) => ({ ...f, name: e.target.value }))}
             placeholder="Наименование"
-            className="input flex-1 text-sm"
+            className="flex-1 text-sm"
           />
-          <select
+          <Select
+            aria-label="Тип зоны"
             value={zoneForm.type}
             onChange={(e) => setZoneForm((f) => ({ ...f, type: e.target.value as ZoneType }))}
-            className="input w-28 text-sm"
+            className="w-28 text-sm"
           >
             {ZONE_TYPES.map((t) => (
               <option key={t} value={t}>
                 {t} — {ZONE_TYPE_LABELS[t]}
               </option>
             ))}
-          </select>
-          <button className="btn-primary text-sm px-3" onClick={handleCreateZone} disabled={createZone.isPending}>
+          </Select>
+          <Button size="sm" className="px-3" onClick={handleCreateZone} loading={createZone.isPending}>
             <Plus size={14} />
-          </button>
+          </Button>
         </div>
         <div className="divide-y divide-gray-100">
           {(zones ?? []).map((z) => (
@@ -234,16 +218,18 @@ function ZonesTab() {
       <div className="card p-5">
         <h3 className="font-semibold text-gray-900 mb-3">Адреса</h3>
         <div className="flex gap-2 mb-4">
-          <input
+          <Input
+            aria-label="Код адреса"
             value={addressForm.code}
             onChange={(e) => setAddressForm((f) => ({ ...f, code: e.target.value }))}
             placeholder="Код адреса"
-            className="input flex-1 text-sm"
+            className="flex-1 text-sm"
           />
-          <select
+          <Select
+            aria-label="Зона адреса"
             value={addressForm.zoneId}
             onChange={(e) => setAddressForm((f) => ({ ...f, zoneId: e.target.value }))}
-            className="input w-36 text-sm"
+            className="w-36 text-sm"
           >
             <option value="">Зона...</option>
             {(zones ?? []).map((z) => (
@@ -251,10 +237,10 @@ function ZonesTab() {
                 {z.code}
               </option>
             ))}
-          </select>
-          <button className="btn-primary text-sm px-3" onClick={handleCreateAddress} disabled={createAddress.isPending}>
+          </Select>
+          <Button size="sm" className="px-3" onClick={handleCreateAddress} loading={createAddress.isPending}>
             <Plus size={14} />
-          </button>
+          </Button>
         </div>
         <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
           {(addresses ?? []).map((a) => (
@@ -265,7 +251,7 @@ function ZonesTab() {
                 <span className="text-xs text-gray-400">
                   ({a.zone.code} — {ZONE_TYPE_LABELS[a.zone.type]})
                 </span>
-                {!a.isActive && <span className="badge-gray badge text-[10px]">неактивен</span>}
+                {!a.isActive && <Badge tone="gray" className="text-[10px]">неактивен</Badge>}
               </div>
               <button
                 className="text-gray-300 hover:text-red-500 transition-colors"
@@ -322,73 +308,63 @@ function TasksTab() {
   return (
     <div>
       {isLoading ? (
-        <div className="card p-5 animate-pulse space-y-3">
+        <div className="card p-5 space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-10" />
           ))}
         </div>
       ) : !tasks.length ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <Package size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">Заданий нет</h3>
-          <p className="text-sm text-gray-400 mt-1">
-            Формируются автоматически при создании ИСП и выполняются на ТСД
-          </p>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="Заданий нет"
+          description="Формируются автоматически при создании ИСП и выполняются на ТСД"
+        />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">№ ПРМ</th>
-                  <th className="px-4 py-3 font-medium text-center">Позиций</th>
-                  <th className="px-4 py-3 font-medium text-center">Перемещено</th>
-                  <th className="px-4 py-3 font-medium">Статус</th>
-                  <th className="px-4 py-3 font-medium text-right">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tasks.map((t) => {
-                  const done = t.items.filter((i) => i.status === 'Перемещено').length;
-                  return (
-                    <Fragment key={t.id}>
-                      <tr
-                        className="hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => setExpanded(expanded === t.id ? null : t.id)}
-                      >
-                        <td className="px-4 py-3 font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
-                          {t.number}
-                        </td>
-                        <td className="px-4 py-3 text-center">{t.items.length}</td>
-                        <td className="px-4 py-3 text-center">
-                          {done}/{t.items.length}
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={t.status} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1 justify-end">
-                            {t.status !== 'Выполнено' && t.status !== 'Отмена' && (
-                              <button
-                                className="btn-ghost text-xs p-2 text-amber-600 hover:bg-amber-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCancelTarget(t.id);
-                                }}
-                                title="Отменить"
-                              >
-                                <Ban size={14} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                      {expanded === t.id && (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-3 bg-gray-50">
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>№ ПРМ</TH>
+              <TH align="center">Позиций</TH>
+              <TH align="center">Перемещено</TH>
+              <TH>Статус</TH>
+              <TH align="right">Действия</TH>
+            </THead>
+            <TBody>
+              {tasks.map((t) => {
+                const done = t.items.filter((i) => i.status === 'Перемещено').length;
+                return (
+                  <Fragment key={t.id}>
+                    <TR onClick={() => setExpanded(expanded === t.id ? null : t.id)}>
+                      <TD className="font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
+                        {t.number}
+                      </TD>
+                      <TD align="center">{t.items.length}</TD>
+                      <TD align="center">
+                        {done}/{t.items.length}
+                      </TD>
+                      <TD>
+                        <Badge tone={statusTone(t.status)}>{t.status}</Badge>
+                      </TD>
+                      <TD align="right">
+                        {t.status !== 'Выполнено' && t.status !== 'Отмена' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-amber-600 hover:bg-amber-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCancelTarget(t.id);
+                            }}
+                            title="Отменить"
+                          >
+                            <Ban size={14} />
+                          </Button>
+                        )}
+                      </TD>
+                    </TR>
+                    {expanded === t.id && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-3 bg-gray-50">
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="text-left text-gray-500">
@@ -425,10 +401,9 @@ function TasksTab() {
                     </Fragment>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+            </TBody>
+          </Table>
+        </TableContainer>
       )}
 
       <ConfirmDialog

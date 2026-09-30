@@ -4,6 +4,7 @@ export { Badge, statusTone } from './Badge';
 export { PageHeader } from './PageHeader';
 export { SearchInput } from './SearchInput';
 export { SegmentedControl, type Segment } from './SegmentedControl';
+export { Tabs } from './Tabs';
 export { Skeleton, EmptyState, ErrorState, TableSkeleton } from './states';
 export {
   TableContainer,
