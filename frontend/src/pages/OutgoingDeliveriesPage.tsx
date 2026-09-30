@@ -23,8 +23,26 @@ import {
   useShipOutgoingDelivery,
   useUpdateItemOperations,
 } from '@/hooks/useOutgoingDeliveries';
-import { Dialog } from '@/components/ui/Dialog';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  Dialog,
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  Input,
+  Select,
+  Field,
+  Badge,
+  statusTone,
+  EmptyState,
+  Skeleton,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import {
   parseOutgoingDeliveryExcel,
   type OutgoingDeliveryParseResult,
@@ -33,22 +51,6 @@ import type { OutgoingDelivery, OutgoingDeliveryItem } from '@/types/outgoingDel
 import { outgoingTotal } from '@/types/outgoingDelivery';
 import { formatDate, formatDateShort } from '@/lib/utils';
 import type { Partner } from '@/types/partner';
-
-const STATUS_STYLES: Record<string, string> = {
-  Создана: 'bg-gray-100 text-gray-600 ring-gray-500/10',
-  Процесс: 'bg-blue-50 text-blue-700 ring-blue-600/15',
-  Выполнено: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-  Отмена: 'bg-red-50 text-red-600 ring-red-600/15',
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600 ring-gray-500/10';
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ring-1 ring-inset ${cls}`}>
-      {status}
-    </span>
-  );
-}
 
 export function OutgoingDeliveriesPage() {
   const [partnerId, setPartnerId] = useState<number | undefined>(undefined);
@@ -81,24 +83,23 @@ export function OutgoingDeliveriesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Исходящие поставки (ИСП)</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {data?.total ? `${data.total} заявок` : 'Нет заявок'}
-          </p>
-        </div>
-        <button className="btn-primary" onClick={() => setImportOpen(true)}>
-          <Plus size={16} />
-          Загрузить ИСП
-        </button>
-      </div>
+      <PageHeader
+        title="Исходящие поставки (ИСП)"
+        subtitle={data?.total ? `${data.total} заявок` : 'Нет заявок'}
+        actions={
+          <Button onClick={() => setImportOpen(true)}>
+            <Plus size={16} />
+            Загрузить ИСП
+          </Button>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <select
+        <Select
+          aria-label="Партнёр"
           value={partnerId ?? ''}
           onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : undefined)}
-          className="input sm:max-w-xs"
+          className="sm:max-w-xs"
         >
           <option value="">Все партнёры</option>
           {partners.map((p) => (
@@ -106,104 +107,104 @@ export function OutgoingDeliveriesPage() {
               {p.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {isLoading ? (
-        <div className="card p-5 animate-pulse space-y-3">
+        <div className="card p-5 space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-10 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-10" />
           ))}
         </div>
       ) : deliveries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <Package size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">Заявок нет</h3>
-          <p className="text-sm text-gray-400 mt-1 mb-6">
-            Загрузите Excel-файл ИСП или дождитесь авто-создания по КД из ВХП
-          </p>
-          <button className="btn-primary" onClick={() => setImportOpen(true)}>
-            <Plus size={16} />
-            Загрузить ИСП
-          </button>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="Заявок нет"
+          description="Загрузите Excel-файл ИСП или дождитесь авто-создания по КД из ВХП"
+          action={
+            <Button onClick={() => setImportOpen(true)}>
+              <Plus size={16} />
+              Загрузить ИСП
+            </Button>
+          }
+        />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">№ ИСП</th>
-                  <th className="px-4 py-3 font-medium">Партнёр</th>
-                  <th className="px-4 py-3 font-medium">Дата отгрузки</th>
-                  <th className="px-4 py-3 font-medium text-center">Позиций</th>
-                  <th className="px-4 py-3 font-medium text-right">Стоимость</th>
-                  <th className="px-4 py-3 font-medium">Статус</th>
-                  <th className="px-4 py-3 font-medium text-right">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {deliveries.map((d) => {
-                  const total = outgoingTotal(d);
-                  return (
-                    <tr key={d.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
-                        {d.number}
-                        {d.isCrossDock && (
-                          <span className="ml-2 text-xs text-amber-600 align-middle" title="Кросс-докинг">КД</span>
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>№ ИСП</TH>
+              <TH>Партнёр</TH>
+              <TH>Дата отгрузки</TH>
+              <TH align="center">Позиций</TH>
+              <TH align="right">Стоимость</TH>
+              <TH>Статус</TH>
+              <TH align="right">Действия</TH>
+            </THead>
+            <TBody>
+              {deliveries.map((d) => {
+                const total = outgoingTotal(d);
+                return (
+                  <TR key={d.id}>
+                    <TD className="font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
+                      {d.number}
+                      {d.isCrossDock && (
+                        <span className="ml-2 text-xs text-amber-600 align-middle" title="Кросс-докинг">
+                          КД
+                        </span>
+                      )}
+                    </TD>
+                    <TD className="text-gray-600">{d.partner.name}</TD>
+                    <TD className="text-gray-500 whitespace-nowrap">
+                      {d.shipDate ? formatDateShort(d.shipDate) : '—'}
+                    </TD>
+                    <TD align="center">{d.items.length}</TD>
+                    <TD align="right" className="font-mono text-[13px] whitespace-nowrap">
+                      {total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : '—'}
+                    </TD>
+                    <TD>
+                      <Badge tone={statusTone(d.status)}>{d.status}</Badge>
+                    </TD>
+                    <TD align="right">
+                      <div className="flex gap-1 justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => setHistoryTarget(d)} title="История">
+                          <History size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setOpsTarget(d)} title="Операции по позициям">
+                          <ListTree size={14} />
+                        </Button>
+                        {d.status !== 'Выполнено' && d.status !== 'Отмена' && (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => setShipTarget(d)} title="Отгрузка">
+                              <Ship size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-amber-600 hover:bg-amber-50"
+                              onClick={() => setCancelTarget(d)}
+                              title="Отменить"
+                            >
+                              <Ban size={14} />
+                            </Button>
+                          </>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{d.partner.name}</td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                        {d.shipDate ? formatDateShort(d.shipDate) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-center">{d.items.length}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums whitespace-nowrap">
-                        {total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={d.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 justify-end">
-                          <button className="btn-ghost text-xs p-2" onClick={() => setHistoryTarget(d)} title="История">
-                            <History size={14} />
-                          </button>
-                          <button className="btn-ghost text-xs p-2" onClick={() => setOpsTarget(d)} title="Операции по позициям">
-                            <ListTree size={14} />
-                          </button>
-                          {d.status !== 'Выполнено' && d.status !== 'Отмена' && (
-                            <>
-                              <button className="btn-ghost text-xs p-2" onClick={() => setShipTarget(d)} title="Отгрузка">
-                                <Ship size={14} />
-                              </button>
-                              <button
-                                className="btn-ghost text-xs p-2 text-amber-600 hover:bg-amber-50"
-                                onClick={() => setCancelTarget(d)}
-                                title="Отменить"
-                              >
-                                <Ban size={14} />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            className="btn-ghost text-xs p-2 text-red-500 hover:bg-red-50"
-                            onClick={() => setDeleteTarget(d)}
-                            title="Удалить"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:bg-red-50"
+                          onClick={() => setDeleteTarget(d)}
+                          title="Удалить"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
+        </TableContainer>
       )}
 
       <OutgoingDeliveryImportDialog open={importOpen} onClose={() => setImportOpen(false)} partners={partners} />
@@ -305,10 +306,10 @@ function OutgoingDeliveryImportDialog({
           <FileSpreadsheet size={40} className="text-gray-400 mb-3" />
           <p className="text-sm font-medium text-gray-700">Выберите файл «Заявка на исходящую поставку»</p>
           <p className="text-xs text-gray-400 mt-1">Артикул, наименование, количество, вес, объём</p>
-          <button type="button" className="btn-primary mt-4">
+          <Button type="button" className="mt-4">
             <Upload size={16} />
             Выбрать файл
-          </button>
+          </Button>
           <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
         </div>
       ) : (
@@ -319,18 +320,17 @@ function OutgoingDeliveryImportDialog({
               <span className="font-medium">{fileName}</span>
               <span className="text-gray-400">— {parsed.items.length} позиций</span>
             </div>
-            <button type="button" className="btn-ghost text-xs" onClick={reset}>
+            <Button type="button" variant="ghost" size="sm" onClick={reset}>
               Выбрать другой файл
-            </button>
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="label">Партнёр *</label>
-              <select
+            <Field label="Партнёр" required htmlFor="oexp-partner">
+              <Select
+                id="oexp-partner"
                 value={partnerId}
                 onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : '')}
-                className="input"
               >
                 <option value="">Выберите...</option>
                 {partners.map((p) => (
@@ -338,16 +338,14 @@ function OutgoingDeliveryImportDialog({
                     {p.name}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">Склад отгрузки</label>
-              <input value={parsed.warehouseCode ?? '—'} readOnly className="input bg-gray-50 text-gray-500" />
-            </div>
-            <div>
-              <label className="label">Дата отгрузки</label>
-              <input value={parsed.shipDate ?? '—'} readOnly className="input bg-gray-50 text-gray-500" />
-            </div>
+              </Select>
+            </Field>
+            <Field label="Склад отгрузки">
+              <Input value={parsed.warehouseCode ?? '—'} readOnly className="bg-gray-50 text-gray-500" />
+            </Field>
+            <Field label="Дата отгрузки">
+              <Input value={parsed.shipDate ?? '—'} readOnly className="bg-gray-50 text-gray-500" />
+            </Field>
           </div>
 
           {parsed.warnings.length > 0 && (
@@ -364,27 +362,25 @@ function OutgoingDeliveryImportDialog({
             </div>
           )}
 
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="max-h-60 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr className="text-left text-xs text-gray-500">
-                    <th className="px-3 py-2 font-medium">Артикул</th>
-                    <th className="px-3 py-2 font-medium">Наименование</th>
-                    <th className="px-3 py-2 font-medium text-center">Кол-во</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+          <div className="max-h-60 overflow-auto">
+            <TableContainer>
+              <Table>
+                <THead>
+                  <TH>Артикул</TH>
+                  <TH>Наименование</TH>
+                  <TH align="center">Кол-во</TH>
+                </THead>
+                <TBody>
                   {parsed.items.map((item, i) => (
-                    <tr key={i}>
-                      <td className="px-3 py-2 font-mono text-xs">{item.article}</td>
-                      <td className="px-3 py-2">{item.name ?? '—'}</td>
-                      <td className="px-3 py-2 text-center">{item.quantity}</td>
-                    </tr>
+                    <TR key={i}>
+                      <TD className="font-mono text-xs">{item.article}</TD>
+                      <TD>{item.name ?? '—'}</TD>
+                      <TD align="center">{item.quantity}</TD>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TBody>
+              </Table>
+            </TableContainer>
           </div>
 
           <p className="text-xs text-gray-400">
@@ -393,12 +389,12 @@ function OutgoingDeliveryImportDialog({
           </p>
 
           <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-            <button type="button" className="btn-secondary" onClick={handleClose} disabled={create.isPending}>
+            <Button variant="secondary" onClick={handleClose} disabled={create.isPending}>
               Отмена
-            </button>
-            <button type="button" className="btn-primary" onClick={handleCreate} disabled={create.isPending}>
-              {create.isPending ? 'Создание...' : 'Создать ИСП'}
-            </button>
+            </Button>
+            <Button onClick={handleCreate} loading={create.isPending}>
+              Создать ИСП
+            </Button>
           </div>
         </div>
       )}
@@ -429,42 +425,41 @@ function ShipDialog({ delivery, onClose }: { delivery: OutgoingDelivery; onClose
   return (
     <Dialog open onClose={onClose} title={`Отгрузка — ${delivery.number}`} size="lg">
       <div className="space-y-4">
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs text-gray-500">
-                <th className="px-3 py-2 font-medium">Артикул</th>
-                <th className="px-3 py-2 font-medium">Наименование</th>
-                <th className="px-3 py-2 font-medium text-center">План</th>
-                <th className="px-3 py-2 font-medium text-center w-28">Факт</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>Артикул</TH>
+              <TH>Наименование</TH>
+              <TH align="center">План</TH>
+              <TH align="center">Факт</TH>
+            </THead>
+            <TBody>
               {delivery.items.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-3 py-2 font-mono text-xs">{item.article}</td>
-                  <td className="px-3 py-2">{item.name ?? '—'}</td>
-                  <td className="px-3 py-2 text-center text-gray-500">{item.quantity}</td>
-                  <td className="px-3 py-2">
-                    <input
+                <TR key={item.id}>
+                  <TD className="font-mono text-xs">{item.article}</TD>
+                  <TD>{item.name ?? '—'}</TD>
+                  <TD align="center" className="text-gray-500">{item.quantity}</TD>
+                  <TD align="center" className="w-28">
+                    <Input
+                      aria-label={`Факт по ${item.article}`}
                       value={facts[item.id] ?? ''}
                       onChange={(e) => setFacts((prev) => ({ ...prev, [item.id]: e.target.value }))}
                       inputMode="numeric"
-                      className="input text-center py-1"
+                      className="text-center py-1"
                     />
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
+        </TableContainer>
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={ship.isPending}>
+          <Button variant="secondary" onClick={onClose} disabled={ship.isPending}>
             Отмена
-          </button>
-          <button type="button" className="btn-primary" onClick={handleSubmit} disabled={ship.isPending}>
-            {ship.isPending ? 'Сохранение...' : 'Подтвердить отгрузку'}
-          </button>
+          </Button>
+          <Button onClick={handleSubmit} loading={ship.isPending}>
+            Подтвердить отгрузку
+          </Button>
         </div>
       </div>
     </Dialog>
@@ -543,12 +538,13 @@ function OperationsDialog({ delivery, onClose }: { delivery: OutgoingDelivery; o
                           {op.name}
                         </label>
                         {checked && (
-                          <input
+                          <Input
+                            aria-label={`Количество для ${op.name}`}
                             value={selected.get(op.code) ?? ''}
                             onChange={(e) =>
                               setSelected((prev) => new Map(prev).set(op.code, e.target.value))
                             }
-                            className="input w-20 text-center text-sm py-1"
+                            className="w-20 text-center text-sm py-1"
                           />
                         )}
                       </div>
@@ -556,12 +552,12 @@ function OperationsDialog({ delivery, onClose }: { delivery: OutgoingDelivery; o
                   })}
               </div>
               <div className="flex gap-3 justify-end pt-4">
-                <button type="button" className="btn-secondary" onClick={onClose} disabled={updateOps.isPending}>
+                <Button variant="secondary" onClick={onClose} disabled={updateOps.isPending}>
                   Закрыть
-                </button>
-                <button type="button" className="btn-primary" onClick={handleSave} disabled={updateOps.isPending}>
-                  {updateOps.isPending ? 'Сохранение...' : 'Сохранить и пересчитать'}
-                </button>
+                </Button>
+                <Button onClick={handleSave} loading={updateOps.isPending}>
+                  Сохранить и пересчитать
+                </Button>
               </div>
             </>
           )}
@@ -577,9 +573,9 @@ function HistoryDialog({ delivery, onClose }: { delivery: OutgoingDelivery; onCl
   return (
     <Dialog open onClose={onClose} title={`История статусов — ${delivery.number}`} size="sm">
       {isLoading ? (
-        <div className="space-y-2 animate-pulse">
+        <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-8" />
           ))}
         </div>
       ) : !history?.length ? (
@@ -588,7 +584,7 @@ function HistoryDialog({ delivery, onClose }: { delivery: OutgoingDelivery; onCl
         <ol className="space-y-3">
           {history.map((h) => (
             <li key={h.id} className="flex items-start gap-3 text-sm">
-              <StatusBadge status={h.status} />
+              <Badge tone={statusTone(h.status)}>{h.status}</Badge>
               <div className="min-w-0">
                 <p className="text-gray-700">{h.changedBy}</p>
                 <p className="text-xs text-gray-400">{formatDate(h.changedAt)}</p>
