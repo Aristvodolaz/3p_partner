@@ -23,9 +23,6 @@ export default function App() {
           <Route path="/" element={<Navigate to="/incoming-deliveries" replace />} />
           <Route path="/incoming-deliveries" element={<IncomingDeliveriesPage />} />
           <Route path="/outgoing-deliveries" element={<OutgoingDeliveriesPage />} />
-          {/* Архив — старый единый цикл заявки, заменён ВХП/ИСП/Инвентаризацией.
-              Данные и маршрут оставлены для истории/актов, из навигации убран. */}
-          <Route path="/requests" element={<RequestsPage />} />
 
           <Route element={<ProtectedRoute requireRole="НРП" />}>
             <Route path="/partners" element={<PartnersPage />} />
@@ -35,6 +32,9 @@ export default function App() {
             <Route path="/storage" element={<StoragePage />} />
             <Route path="/employees" element={<EmployeesPage />} />
             <Route path="/acts" element={<ActsPage />} />
+            {/* Архив — старый единый цикл заявки, заменён ВХП/ИСП/Инвентаризацией.
+                Данные и маршрут оставлены для истории/актов, из навигации убран. */}
+            <Route path="/requests" element={<RequestsPage />} />
           </Route>
         </Route>
       </Route>

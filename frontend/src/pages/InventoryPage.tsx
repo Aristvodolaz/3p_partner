@@ -349,6 +349,7 @@ function CountDialog({ task, onClose }: { task: InventoryTask; onClose: () => vo
 
 function ExecutorsDialog({ task, onClose }: { task: InventoryTask; onClose: () => void }) {
   const [employeeId, setEmployeeId] = useState('');
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const add = useAddExecutor(task.id);
   const remove = useRemoveExecutor(task.id);
 
@@ -370,7 +371,7 @@ function ExecutorsDialog({ task, onClose }: { task: InventoryTask; onClose: () =
                 <span>{e.employeeId}</span>
                 <button
                   className="text-gray-300 hover:text-red-500 transition-colors"
-                  onClick={() => remove.mutate(e.employeeId)}
+                  onClick={() => setRemoveTarget(e.employeeId)}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -378,6 +379,19 @@ function ExecutorsDialog({ task, onClose }: { task: InventoryTask; onClose: () =
             ))
           )}
         </div>
+        <ConfirmDialog
+          open={removeTarget !== null}
+          onClose={() => setRemoveTarget(null)}
+          onConfirm={() => {
+            if (removeTarget) remove.mutate(removeTarget);
+            setRemoveTarget(null);
+          }}
+          title="Снять исполнителя"
+          description={`Снять сотрудника ${removeTarget} с этого задания?`}
+          confirmLabel="Снять"
+          danger
+          loading={remove.isPending}
+        />
         <div className="flex gap-2">
           <input
             value={employeeId}
