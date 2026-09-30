@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { LayoutGrid, List, Plus, Search, Users } from 'lucide-react';
+import { LayoutGrid, List, Plus, Users } from 'lucide-react';
 import { usePartners, useCreatePartner } from '@/hooks/usePartners';
 import { PartnerCard } from '@/components/partners/PartnerCard';
 import { PartnerForm } from '@/components/partners/PartnerForm';
-import { Dialog } from '@/components/ui/Dialog';
-import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  Button,
+  PageHeader,
+  SearchInput,
+  SegmentedControl,
+  EmptyState,
+  Skeleton,
+} from '@/components/ui';
 import type { PartnerFormData } from '@/types/partner';
 
 export function PartnersPage() {
@@ -30,119 +37,84 @@ export function PartnersPage() {
 
   return (
     <div>
-      {/* Page title */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Партнёры</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {total > 0 ? pluralize(total, 'партнёр', 'партнёра', 'партнёров') : 'Нет партнёров'}
-            </p>
-          </div>
-          <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+      <PageHeader
+        title="Партнёры"
+        subtitle={total > 0 ? pluralize(total, 'партнёр', 'партнёра', 'партнёров') : 'Нет партнёров'}
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus size={16} />
             Добавить партнёра
-          </button>
-        </div>
+          </Button>
+        }
+      />
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Поиск по названию, ИНН, контактному лицу..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input pl-9"
-            />
-          </div>
-          <div className="flex gap-2">
-            {(
-              [
-                { label: 'Все', value: undefined },
-                { label: 'Активные', value: true },
-                { label: 'Деактивированные', value: false },
-              ] as const
-            ).map((f) => (
-              <button
-                key={String(f.value)}
-                onClick={() => setActiveFilter(f.value)}
-                className={`btn text-sm px-4 py-2 ${
-                  activeFilter === f.value
-                    ? 'bg-primary text-white hover:bg-primary-600 focus:ring-primary-500'
-                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 self-start">
-            <button
-              onClick={() => setView('grid')}
-              title="Вид карточками"
-              className={cn(
-                'p-1.5 rounded-md transition-colors',
-                view === 'grid' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600',
-              )}
-            >
-              <LayoutGrid size={16} />
-            </button>
-            <button
-              onClick={() => setView('list')}
-              title="Вид списком"
-              className={cn(
-                'p-1.5 rounded-md transition-colors',
-                view === 'list' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600',
-              )}
-            >
-              <List size={16} />
-            </button>
-          </div>
-        </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по названию, ИНН, контактному лицу..."
+        />
+        <SegmentedControl
+          aria-label="Фильтр по статусу"
+          value={activeFilter}
+          onChange={setActiveFilter}
+          segments={[
+            { label: 'Все', value: undefined },
+            { label: 'Активные', value: true },
+            { label: 'Деактивированные', value: false },
+          ]}
+        />
+        <SegmentedControl
+          aria-label="Вид отображения"
+          value={view}
+          onChange={setView}
+          segments={[
+            { label: '', value: 'grid', icon: LayoutGrid },
+            { label: '', value: 'list', icon: List },
+          ]}
+        />
+      </div>
 
-        {/* Content */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="card p-5 animate-pulse">
-                <div className="flex gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gray-200" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4" />
-                    <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <div key={j} className="h-3 bg-gray-200 rounded" />
-                  ))}
+      {/* Content */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card p-5">
+              <div className="flex gap-3 mb-4">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : partners.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-              <Users size={28} className="text-gray-400" />
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <Skeleton key={j} className="h-3" />
+                ))}
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-gray-700">Партнёры не найдены</h3>
-            <p className="text-sm text-gray-400 mt-1 mb-6">
-              {search
-                ? 'Попробуйте изменить параметры поиска'
-                : 'Добавьте первого партнёра, чтобы начать работу'}
-            </p>
-            {!search && (
-              <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+          ))}
+        </div>
+      ) : partners.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Партнёры не найдены"
+          description={
+            search
+              ? 'Попробуйте изменить параметры поиска'
+              : 'Добавьте первого партнёра, чтобы начать работу'
+          }
+          action={
+            !search && (
+              <Button onClick={() => setCreateOpen(true)}>
                 <Plus size={16} />
                 Добавить партнёра
-              </button>
-            )}
-          </div>
-        ) : view === 'grid' ? (
+              </Button>
+            )
+          }
+        />
+      ) : view === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {partners.map((p) => (
               <PartnerCard key={p.id} partner={p} view="grid" />
