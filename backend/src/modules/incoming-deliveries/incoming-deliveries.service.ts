@@ -108,7 +108,12 @@ export class IncomingDeliveriesService {
   }
 
   async remove(id: number) {
-    await this.findOne(id);
+    const delivery = await this.findOne(id);
+    if (delivery.status !== 'Создана') {
+      throw new ConflictException(
+        'Удалить можно только заявку в статусе «Создана» — приёмка уже началась, а связанные с ней остатки на складе потеряют привязку к партии',
+      );
+    }
     await this.prisma.incomingDelivery.delete({ where: { id } });
     return { deleted: true };
   }

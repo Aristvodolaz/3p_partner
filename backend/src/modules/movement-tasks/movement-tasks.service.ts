@@ -139,8 +139,25 @@ export class MovementTasksService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.storageMovement.create({
+    await this.prisma.$transaction(async (tx) => {
+      // Условный update вместо простого update — гейт от повторного/гоночного
+      // подтверждения одной и той же позиции (частая ситуация на ТСД: сеть
+      // ретраит запрос). Если count === 0, позицию уже перемещали параллельно
+      // — откатываем всю транзакцию, ничего не задваивая в StorageMovement.
+      const { count } = await tx.movementTaskItem.updateMany({
+        where: { id: item.id, status: { not: 'Перемещено' } },
+        data: {
+          status: 'Перемещено',
+          targetAddressId: targetAddress.id,
+          confirmedBy,
+          confirmedAt: new Date(),
+        },
+      });
+      if (count === 0) {
+        throw new ConflictException('Позиция уже перемещена');
+      }
+
+      await tx.storageMovement.create({
         data: {
           partnerId: task.partnerId,
           article: item.article,
@@ -154,8 +171,8 @@ export class MovementTasksService {
           incomingDeliveryItemId: item.incomingDeliveryItemId,
           createdBy: confirmedBy,
         },
-      }),
-      this.prisma.storageMovement.create({
+      });
+      await tx.storageMovement.create({
         data: {
           partnerId: task.partnerId,
           article: item.article,
@@ -169,17 +186,8 @@ export class MovementTasksService {
           incomingDeliveryItemId: item.incomingDeliveryItemId,
           createdBy: confirmedBy,
         },
-      }),
-      this.prisma.movementTaskItem.update({
-        where: { id: item.id },
-        data: {
-          status: 'Перемещено',
-          targetAddressId: targetAddress.id,
-          confirmedBy,
-          confirmedAt: new Date(),
-        },
-      }),
-    ]);
+      });
+    });
 
     const wasCreated = task.status === 'Создана';
     const refreshed = await this.findOne(taskId);

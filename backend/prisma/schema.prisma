@@ -133,6 +133,12 @@ model StorageMovement {
   @@index([partnerId, article])
   @@index([address])
   @@index([incomingDeliveryItemId])
+  // Закрывают горячие FIFO-запросы (fifoBatchesAtAddress/fifoBatchesInZone,
+  // balanceInZone) — без них каждое place/remove/move/ship/confirmItem
+  // сканирует весь срез partnerId+article, а таблица растёт только вверх
+  // (append-only журнал движений).
+  @@index([partnerId, article, address])
+  @@index([partnerId, article, zoneType])
   @@map("StorageMovements")
 }
 
