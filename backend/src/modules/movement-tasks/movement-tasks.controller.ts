@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentEmployee } from '../../common/decorators/current-employee.decorator';
 import { CurrentEmployeeInfo } from '../../common/guards/jwt-auth.guard';
 import { MovementTasksService } from './movement-tasks.service';
@@ -29,6 +30,7 @@ export class MovementTasksController {
   }
 
   @Post(':id/cancel')
+  @Roles('НРП')
   @ApiOperation({ summary: 'Отменить задание вручную' })
   cancel(@Param('id', ParseIntPipe) id: number, @CurrentEmployee() employee: CurrentEmployeeInfo) {
     return this.service.cancel(id, employee.fullName);

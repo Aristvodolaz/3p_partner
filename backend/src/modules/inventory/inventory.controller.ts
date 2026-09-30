@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentEmployee } from '../../common/decorators/current-employee.decorator';
 import { CurrentEmployeeInfo } from '../../common/guards/jwt-auth.guard';
 import { InventoryService } from './inventory.service';
@@ -42,6 +43,7 @@ export class InventoryController {
   }
 
   @Post()
+  @Roles('НРП')
   @ApiOperation({
     summary:
       'Создать задание: по выбранным артикулам или всем остаткам склада (партнёра либо всего склада)',
@@ -51,18 +53,21 @@ export class InventoryController {
   }
 
   @Post(':id/executors')
+  @Roles('НРП')
   @ApiOperation({ summary: 'Назначить исполнителя (задание могут выполнять несколько сотрудников)' })
   addExecutor(@Param('id', ParseIntPipe) id: number, @Body() dto: AddExecutorDto) {
     return this.service.addExecutor(id, dto.employeeId);
   }
 
   @Delete(':id/executors/:employeeId')
+  @Roles('НРП')
   @ApiOperation({ summary: 'Снять исполнителя с задания' })
   removeExecutor(@Param('id', ParseIntPipe) id: number, @Param('employeeId') employeeId: string) {
     return this.service.removeExecutor(id, employeeId);
   }
 
   @Post(':id/cancel')
+  @Roles('НРП')
   @ApiOperation({ summary: 'Отменить задание вручную' })
   cancel(@Param('id', ParseIntPipe) id: number, @CurrentEmployee() employee: CurrentEmployeeInfo) {
     return this.service.cancel(id, employee.fullName);
