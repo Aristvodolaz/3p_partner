@@ -5,6 +5,8 @@ import com.npp.tsd.core.model.BindParentPalletBody
 import com.npp.tsd.core.model.CreateDocumentBody
 import com.npp.tsd.core.model.CreatePackingUnitBody
 import com.npp.tsd.core.model.ConfirmMovementTaskItemBody
+import com.npp.tsd.core.model.ConfirmOutgoingItemBody
+import com.npp.tsd.core.model.OutgoingDeliveryItem
 import com.npp.tsd.core.model.CreateReceiptBody
 import com.npp.tsd.core.model.CreateShipmentBody
 import com.npp.tsd.core.model.CountInventoryTaskBody
@@ -221,6 +223,12 @@ interface TsdApi {
         @Path("id") id: Int,
         @Body body: ShipOutgoingDeliveryBody,
     ): OutgoingDelivery
+
+    @PATCH("outgoing-deliveries/items/{itemId}/confirm")
+    suspend fun confirmOutgoingItem(
+        @Path("itemId") itemId: Int,
+        @Body body: ConfirmOutgoingItemBody,
+    ): OutgoingDeliveryItem
 
     // --- Инвентаризация ---
 

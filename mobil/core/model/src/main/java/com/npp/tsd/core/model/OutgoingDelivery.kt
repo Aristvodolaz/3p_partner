@@ -24,6 +24,7 @@ data class OutgoingDeliveryItem(
     val name: String? = null,
     val quantity: Int,
     val factQuantity: Int? = null,
+    val confirmedQuantity: Int = 0,
     val weight: String? = null,
     val volume: String? = null,
     val unitCost: String? = null,
@@ -66,4 +67,11 @@ data class ShipOutgoingDeliveryItemBody(
 @Serializable
 data class ShipOutgoingDeliveryBody(
     val items: List<ShipOutgoingDeliveryItemBody>,
+)
+
+/** Штучное подтверждение позиции: quantity — добавка к уже накопленному, final закрывает позицию. */
+@Serializable
+data class ConfirmOutgoingItemBody(
+    val quantity: Int,
+    val final: Boolean = false,
 )

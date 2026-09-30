@@ -590,6 +590,11 @@ model OutgoingDeliveryItem {
   name         String?                         @db.NVarChar(500)
   quantity     Int
   factQuantity Int?
+  // Накопленное количество по частичным подтверждениям с ТСД (кнопка
+  // "Подтвердить" в мобильном — штучная история без закрытия позиции),
+  // пока factQuantity не выставлен финальным "Завершить". После финализации
+  // confirmedQuantity == factQuantity.
+  confirmedQuantity Int                        @default(0)
   weight       Decimal?                        @db.Decimal(10, 3)
   volume       Decimal?                        @db.Decimal(10, 3)
   unitCost     Decimal?                        @db.Decimal(12, 2)

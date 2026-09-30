@@ -1,6 +1,7 @@
 package com.npp.tsd.core.data
 
 import com.npp.tsd.core.network.ApiProvider
+import com.npp.tsd.core.model.ConfirmOutgoingItemBody
 import com.npp.tsd.core.model.ShipOutgoingDeliveryBody
 import com.npp.tsd.core.model.ShipOutgoingDeliveryItemBody
 
@@ -17,4 +18,7 @@ class OutgoingDeliveriesRepository(private val settings: SettingsRepository) {
 
     suspend fun ship(id: Int, items: List<ShipOutgoingDeliveryItemBody>) =
         api().shipOutgoingDelivery(id, ShipOutgoingDeliveryBody(items))
+
+    suspend fun confirmItem(itemId: Int, quantity: Int, final: Boolean) =
+        api().confirmOutgoingItem(itemId, ConfirmOutgoingItemBody(quantity, final))
 }

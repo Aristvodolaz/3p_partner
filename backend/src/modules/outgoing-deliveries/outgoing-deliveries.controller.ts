@@ -14,6 +14,7 @@ import { CurrentEmployee } from '../../common/decorators/current-employee.decora
 import { CurrentEmployeeInfo } from '../../common/guards/jwt-auth.guard';
 import { OutgoingDeliveriesService } from './outgoing-deliveries.service';
 import {
+  ConfirmOutgoingDeliveryItemDto,
   CreateOutgoingDeliveryDto,
   ShipOutgoingDeliveryDto,
   UpdateItemOperationsDto,
@@ -96,5 +97,17 @@ export class OutgoingDeliveriesController {
     @CurrentEmployee() employee: CurrentEmployeeInfo,
   ) {
     return this.service.ship(id, dto, employee.fullName);
+  }
+
+  @Patch('items/:itemId/confirm')
+  @ApiOperation({
+    summary: 'Штучное подтверждение позиции с ТСД: quantity добавляется к накопленному, final закрывает позицию',
+  })
+  confirmItem(
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body() dto: ConfirmOutgoingDeliveryItemDto,
+    @CurrentEmployee() employee: CurrentEmployeeInfo,
+  ) {
+    return this.service.confirmItem(itemId, dto, employee.fullName);
   }
 }

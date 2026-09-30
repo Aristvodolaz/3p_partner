@@ -9,6 +9,7 @@ import { DocumentNumberingService } from '../../common/document-numbering/docume
 import { StorageService } from '../storage/storage.service';
 import { MovementTasksService } from '../movement-tasks/movement-tasks.service';
 import {
+  ConfirmOutgoingDeliveryItemDto,
   CreateOutgoingDeliveryDto,
   OutgoingDeliveryItemDto,
   ShipOutgoingDeliveryDto,
@@ -272,6 +273,13 @@ export class OutgoingDeliveriesService {
     }
 
     const wasCreated = delivery.status === 'Создана';
+    await this.maybeAdvanceStatus(id, wasCreated, executedBy);
+
+    return this.findOne(id);
+  }
+
+  /** Общий хвост ship()/confirmItem(): переводит статус заявки, когда все позиции отгружены. */
+  private async maybeAdvanceStatus(id: number, wasCreated: boolean, executedBy: string) {
     const refreshed = await this.findOne(id);
     const allShipped = refreshed.items.every((i) => i.factQuantity != null);
 
@@ -289,8 +297,68 @@ export class OutgoingDeliveriesService {
       });
       await this.numbering.logStatus('OUTGOING', id, nextStatus, executedBy);
     }
+  }
 
-    return this.findOne(id);
+  /**
+   * Штучное подтверждение позиции ИСП с ТСД: каждый вызов добавляет
+   * quantity к накопленному confirmedQuantity и сразу списывает эту же
+   * добавку из зоны обработки (W) — так остаток в W уменьшается в реальном
+   * времени, а не одним махом в конце. final=true фиксирует factQuantity
+   * (закрывает позицию) и запускает тот же переход статуса, что и ship().
+   */
+  async confirmItem(itemId: number, dto: ConfirmOutgoingDeliveryItemDto, confirmedBy: string) {
+    const item = await this.prisma.outgoingDeliveryItem.findUnique({
+      where: { id: itemId },
+      include: { delivery: true },
+    });
+    if (!item) throw new NotFoundException(`Позиция #${itemId} не найдена`);
+    if (item.factQuantity != null) {
+      throw new ConflictException('Позиция уже отгружена');
+    }
+    if (item.delivery.status === 'Выполнено' || item.delivery.status === 'Отмена') {
+      throw new ConflictException(`Заявка уже в статусе «${item.delivery.status}»`);
+    }
+
+    const available = await this.storage.balanceInZone(item.delivery.partnerId, item.article, 'W');
+    if (available < dto.quantity) {
+      throw new ConflictException(
+        `В зоне обработки доступно только ${available} шт. артикула «${item.article}», нужно ${dto.quantity}`,
+      );
+    }
+
+    const totalConfirmed = item.confirmedQuantity + dto.quantity;
+
+    await this.prisma.$transaction(async (tx) => {
+      // Гейт от гонки/повторного вызова — тот же приём, что в movement-tasks.confirmItem().
+      const { count } = await tx.outgoingDeliveryItem.updateMany({
+        where: { id: itemId, factQuantity: null },
+        data: {
+          confirmedQuantity: totalConfirmed,
+          ...(dto.final ? { factQuantity: totalConfirmed } : {}),
+        },
+      });
+      if (count === 0) throw new ConflictException('Позиция уже отгружена');
+
+      await this.storage.consumeFromZone({
+        partnerId: item.delivery.partnerId,
+        article: item.article,
+        zoneType: 'W',
+        quantity: dto.quantity,
+        docType: 'OUTGOING',
+        docId: item.deliveryId,
+        createdBy: confirmedBy,
+      });
+    });
+
+    if (dto.final) {
+      const wasCreated = item.delivery.status === 'Создана';
+      await this.maybeAdvanceStatus(item.deliveryId, wasCreated, confirmedBy);
+    }
+
+    return this.prisma.outgoingDeliveryItem.findUniqueOrThrow({
+      where: { id: itemId },
+      include: { sku: { select: { id: true, article: true, name: true } }, operations: { include: { operation: true } } },
+    });
   }
 
   /** Пересчёт unitCost/totalCost по текущим тарифам партнёра и составу операций каждой позиции. */

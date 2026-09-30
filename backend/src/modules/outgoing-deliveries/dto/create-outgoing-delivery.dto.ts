@@ -109,6 +109,22 @@ export class ShipOutgoingDeliveryDto {
   items: ShipOutgoingDeliveryItemDto[];
 }
 
+/** Частичное или финальное подтверждение одной позиции ИСП с ТСД (штучная обработка). */
+export class ConfirmOutgoingDeliveryItemDto {
+  @ApiProperty({ description: 'Количество, подтверждаемое этим вызовом (не итог, а добавка)' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity: number;
+
+  @ApiPropertyOptional({
+    description: 'true — финальное подтверждение (закрывает позицию), false/не указано — промежуточное',
+  })
+  @IsOptional()
+  @IsBoolean()
+  final?: boolean;
+}
+
 export class ItemOperationDto {
   @ApiProperty({ description: 'Код операции из справочника' })
   @IsString()
