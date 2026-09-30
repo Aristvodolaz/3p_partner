@@ -89,13 +89,22 @@ export function TD({
   children,
   align = 'left',
   className,
+  onClick,
+  title,
+  colSpan,
 }: {
   children?: React.ReactNode;
   align?: 'left' | 'right' | 'center';
   className?: string;
+  onClick?: () => void;
+  title?: string;
+  colSpan?: number;
 }) {
   return (
     <td
+      onClick={onClick}
+      title={title}
+      colSpan={colSpan}
       className={cn(
         'px-4 py-2.5 text-gray-700 align-middle',
         align === 'right' && 'text-right tabular-nums',

@@ -19,8 +19,27 @@ import {
   useRequests,
   useUpdateRequest,
 } from '@/hooks/useRequests';
-import { Dialog } from '@/components/ui/Dialog';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  Dialog,
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  Field,
+  Badge,
+  SearchInput,
+  EmptyState,
+  Skeleton,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import {
   parseRequestExcel,
   type RequestParseResult,
@@ -71,28 +90,27 @@ export function RequestsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Заявки партнёров</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {data?.total
-              ? `${data.total} заяв${data.total === 1 ? 'ка' : data.total < 5 ? 'ки' : 'ок'}`
-              : 'Нет заявок'}
-          </p>
-        </div>
-        <button className="btn-primary" onClick={() => setImportOpen(true)}>
-          <Plus size={16} />
-          Загрузить заявку
-        </button>
-      </div>
+      <PageHeader
+        title="Заявки партнёров"
+        subtitle={
+          data?.total
+            ? `${data.total} заяв${data.total === 1 ? 'ка' : data.total < 5 ? 'ки' : 'ок'}`
+            : 'Нет заявок'
+        }
+        actions={
+          <Button onClick={() => setImportOpen(true)}>
+            <Plus size={16} />
+            Загрузить заявку
+          </Button>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <select
+        <Select
+          aria-label="Партнёр"
           value={partnerId ?? ''}
-          onChange={(e) =>
-            setPartnerId(e.target.value ? Number(e.target.value) : undefined)
-          }
-          className="input sm:max-w-xs"
+          onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : undefined)}
+          className="sm:max-w-xs"
         >
           <option value="">Все партнёры</option>
           {partners.map((p) => (
@@ -100,130 +118,110 @@ export function RequestsPage() {
               {p.name}
             </option>
           ))}
-        </select>
-        <div className="relative flex-1 max-w-md">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Поиск по номеру, артикулу..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input pl-9"
-          />
-        </div>
+        </Select>
+        <SearchInput value={search} onChange={setSearch} placeholder="Поиск по номеру, артикулу..." />
       </div>
 
       {isLoading ? (
-        <div className="card p-5 animate-pulse space-y-3">
+        <div className="card p-5 space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-10 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-10" />
           ))}
         </div>
       ) : requests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <ClipboardList size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">Заявок нет</h3>
-          <p className="text-sm text-gray-400 mt-1 mb-6">
-            Загрузите Excel-заявку, поступившую от партнёра
-          </p>
-          <button className="btn-primary" onClick={() => setImportOpen(true)}>
-            <Plus size={16} />
-            Загрузить заявку
-          </button>
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          title="Заявок нет"
+          description="Загрузите Excel-заявку, поступившую от партнёра"
+          action={
+            <Button onClick={() => setImportOpen(true)}>
+              <Plus size={16} />
+              Загрузить заявку
+            </Button>
+          }
+        />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">№ заявки</th>
-                  <th className="px-4 py-3 font-medium">Партнёр</th>
-                  <th className="px-4 py-3 font-medium">Дата заявки</th>
-                  <th className="px-4 py-3 font-medium text-center">Позиций</th>
-                  <th className="px-4 py-3 font-medium text-right">
-                    Предв. стоимость
-                  </th>
-                  <th className="px-4 py-3 font-medium">Статус</th>
-                  <th className="px-4 py-3 font-medium text-right">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {requests.map((req) => {
-                  const total = requestTotal(req);
-                  const unknown = hasUnknownArticles(req);
-                  return (
-                    <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
-                        {req.number}
-                        {unknown && (
-                          <span
-                            className="inline-flex ml-2 text-amber-500 align-middle"
-                            title="Есть артикулы, не найденные в справочнике SKU"
-                          >
-                            <AlertTriangle size={14} />
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{req.partner.name}</td>
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                        {req.requestDate ? formatDateShort(req.requestDate) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-center">{req.items.length}</td>
-                      <td
-                        className="px-4 py-3 text-right font-mono text-[13px] font-medium tabular-nums whitespace-nowrap cursor-pointer text-primary hover:underline decoration-dotted underline-offset-2"
-                        onClick={() => {
-                          try {
-                            exportRequestPreliminaryCostPdf(req);
-                          } catch (err) {
-                            toast.error(err instanceof Error ? err.message : 'Не удалось сформировать PDF');
-                          }
-                        }}
-                        title="Скачать предварительную стоимость (PDF)"
-                      >
-                        {total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={req.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 justify-end">
-                          <button
-                            className="btn-ghost text-xs p-2"
-                            onClick={() => recalc.mutate(req.id)}
-                            title="Пересчитать стоимость"
-                            disabled={recalc.isPending}
-                          >
-                            <Calculator size={14} />
-                          </button>
-                          <button
-                            className="btn-ghost text-xs p-2"
-                            onClick={() => setEditRequest(req)}
-                            title="Открыть / редактировать"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            className="btn-ghost text-xs p-2 text-red-500 hover:bg-red-50"
-                            onClick={() => setDeleteTarget(req)}
-                            title="Удалить"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>№ заявки</TH>
+              <TH>Партнёр</TH>
+              <TH>Дата заявки</TH>
+              <TH align="center">Позиций</TH>
+              <TH align="right">Предв. стоимость</TH>
+              <TH>Статус</TH>
+              <TH align="right">Действия</TH>
+            </THead>
+            <TBody>
+              {requests.map((req) => {
+                const total = requestTotal(req);
+                const unknown = hasUnknownArticles(req);
+                return (
+                  <TR key={req.id}>
+                    <TD className="font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
+                      {req.number}
+                      {unknown && (
+                        <span
+                          className="inline-flex ml-2 text-amber-500 align-middle"
+                          title="Есть артикулы, не найденные в справочнике SKU"
+                        >
+                          <AlertTriangle size={14} />
+                        </span>
+                      )}
+                    </TD>
+                    <TD className="text-gray-600">{req.partner.name}</TD>
+                    <TD className="text-gray-500 whitespace-nowrap">
+                      {req.requestDate ? formatDateShort(req.requestDate) : '—'}
+                    </TD>
+                    <TD align="center">{req.items.length}</TD>
+                    <TD
+                      align="right"
+                      className="font-mono text-[13px] font-medium whitespace-nowrap cursor-pointer text-primary hover:underline decoration-dotted underline-offset-2"
+                      onClick={() => {
+                        try {
+                          exportRequestPreliminaryCostPdf(req);
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : 'Не удалось сформировать PDF');
+                        }
+                      }}
+                      title="Скачать предварительную стоимость (PDF)"
+                    >
+                      {total > 0 ? `${total.toLocaleString('ru-RU')} ₽` : '—'}
+                    </TD>
+                    <TD>
+                      <StatusBadge status={req.status} />
+                    </TD>
+                    <TD align="right">
+                      <div className="flex gap-1 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => recalc.mutate(req.id)}
+                          title="Пересчитать стоимость"
+                          disabled={recalc.isPending}
+                        >
+                          <Calculator size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setEditRequest(req)} title="Открыть / редактировать">
+                          <Pencil size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:bg-red-50"
+                          onClick={() => setDeleteTarget(req)}
+                          title="Удалить"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
+        </TableContainer>
       )}
 
       <RequestImportDialog
@@ -253,29 +251,22 @@ export function RequestsPage() {
   );
 }
 
-// Цвета соответствуют RequestStatus.colorHex в мобильном приложении
-// (core:model/Models.kt) — один и тот же статус должен выглядеть одинаково
-// на вебе и в приложении ТСД.
-const STATUS_STYLES: Record<string, string> = {
-  Запланировано: 'bg-gray-100 text-gray-600 ring-gray-500/10',
-  Приёмка: 'bg-purple-50 text-purple-700 ring-purple-600/15',
-  Хранение: 'bg-sky-50 text-sky-700 ring-sky-600/15',
-  'В работе': 'bg-blue-50 text-blue-700 ring-blue-600/15',
-  Готово: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-  Отгружено: 'bg-teal-50 text-teal-700 ring-teal-600/15',
-  Закрыто: 'bg-gray-200 text-gray-700 ring-gray-500/10',
-  Дефект: 'bg-red-50 text-red-600 ring-red-600/15',
+// У заявок свой набор статусов (шире, чем у ВХП/ИСП) — соответствует
+// RequestStatus.colorHex в мобильном приложении (core:model/Models.kt),
+// поэтому маппинг локальный, а не общий statusTone.
+const REQUEST_STATUS_TONE: Record<string, NonNullable<Parameters<typeof Badge>[0]['tone']>> = {
+  Запланировано: 'gray',
+  Приёмка: 'primary',
+  Хранение: 'blue',
+  'В работе': 'blue',
+  Готово: 'green',
+  Отгружено: 'green',
+  Закрыто: 'gray',
+  Дефект: 'red',
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600 ring-gray-500/10';
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ring-1 ring-inset ${cls}`}
-    >
-      {status}
-    </span>
-  );
+  return <Badge tone={REQUEST_STATUS_TONE[status] ?? 'gray'}>{status}</Badge>;
 }
 
 function RequestImportDialog({
@@ -369,10 +360,10 @@ function RequestImportDialog({
           <p className="text-xs text-gray-400 mt-1">
             Артикул, наименование, количество, дата поступления, срок обработки
           </p>
-          <button type="button" className="btn-primary mt-4">
+          <Button type="button" className="mt-4">
             <Upload size={16} />
             Выбрать файл
-          </button>
+          </Button>
           <input
             ref={inputRef}
             type="file"
@@ -389,20 +380,22 @@ function RequestImportDialog({
               <span className="font-medium">{fileName}</span>
               <span className="text-gray-400">— {parsed.items.length} позиций</span>
             </div>
-            <button type="button" className="btn-ghost text-xs" onClick={reset}>
+            <Button type="button" variant="ghost" size="sm" onClick={reset}>
               Выбрать другой файл
-            </button>
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="label">Партнёр *</label>
-              <select
+            <Field
+              label="Партнёр"
+              required
+              htmlFor="req-partner"
+              hint={parsed.customerName ? `Заказчик в файле: ${parsed.customerName}` : undefined}
+            >
+              <Select
+                id="req-partner"
                 value={partnerId}
-                onChange={(e) =>
-                  setPartnerId(e.target.value ? Number(e.target.value) : '')
-                }
-                className="input"
+                onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : '')}
               >
                 <option value="">Выберите...</option>
                 {partners.map((p) => (
@@ -410,30 +403,19 @@ function RequestImportDialog({
                     {p.name}
                   </option>
                 ))}
-              </select>
-              {parsed.customerName && (
-                <p className="mt-1 text-xs text-gray-400">
-                  Заказчик в файле: {parsed.customerName}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="label">№ заявки (вручную) *</label>
-              <input
+              </Select>
+            </Field>
+            <Field label="№ заявки (вручную)" required htmlFor="req-number">
+              <Input
+                id="req-number"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
                 placeholder="2000058118022"
-                className="input"
               />
-            </div>
-            <div>
-              <label className="label">Дата заявки</label>
-              <input
-                value={parsed.requestDate ?? '—'}
-                readOnly
-                className="input bg-gray-50 text-gray-500"
-              />
-            </div>
+            </Field>
+            <Field label="Дата заявки">
+              <Input value={parsed.requestDate ?? '—'} readOnly className="bg-gray-50 text-gray-500" />
+            </Field>
           </div>
 
           {parsed.warnings.length > 0 && (
@@ -450,35 +432,29 @@ function RequestImportDialog({
             </div>
           )}
 
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="max-h-60 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr className="text-left text-xs text-gray-500">
-                    <th className="px-3 py-2 font-medium">Артикул</th>
-                    <th className="px-3 py-2 font-medium">Наименование</th>
-                    <th className="px-3 py-2 font-medium text-center">Кол-во</th>
-                    <th className="px-3 py-2 font-medium">Поступление</th>
-                    <th className="px-3 py-2 font-medium">Обработать до</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+          <div className="max-h-60 overflow-auto">
+            <TableContainer>
+              <Table>
+                <THead>
+                  <TH>Артикул</TH>
+                  <TH>Наименование</TH>
+                  <TH align="center">Кол-во</TH>
+                  <TH>Поступление</TH>
+                  <TH>Обработать до</TH>
+                </THead>
+                <TBody>
                   {parsed.items.map((item, i) => (
-                    <tr key={i}>
-                      <td className="px-3 py-2 font-mono text-xs">{item.article}</td>
-                      <td className="px-3 py-2">{item.name ?? '—'}</td>
-                      <td className="px-3 py-2 text-center">{item.quantity}</td>
-                      <td className="px-3 py-2 text-xs text-gray-500">
-                        {item.arrivalDate ?? '—'}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-gray-500">
-                        {item.shipmentDate ?? '—'}
-                      </td>
-                    </tr>
+                    <TR key={i}>
+                      <TD className="font-mono text-xs">{item.article}</TD>
+                      <TD>{item.name ?? '—'}</TD>
+                      <TD align="center">{item.quantity}</TD>
+                      <TD className="text-xs text-gray-500">{item.arrivalDate ?? '—'}</TD>
+                      <TD className="text-xs text-gray-500">{item.shipmentDate ?? '—'}</TD>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TBody>
+              </Table>
+            </TableContainer>
           </div>
 
           <p className="text-xs text-gray-400">
@@ -487,22 +463,12 @@ function RequestImportDialog({
           </p>
 
           <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleClose}
-              disabled={create.isPending}
-            >
+            <Button variant="secondary" onClick={handleClose} disabled={create.isPending}>
               Отмена
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleCreate}
-              disabled={create.isPending}
-            >
-              {create.isPending ? 'Создание...' : 'Создать заявку'}
-            </button>
+            </Button>
+            <Button onClick={handleCreate} loading={create.isPending}>
+              Создать заявку
+            </Button>
           </div>
         </div>
       )}
@@ -586,122 +552,111 @@ function RequestEditDialog({
     >
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="label">№ заявки</label>
-            <input
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-              className="input"
-            />
-          </div>
-          <div>
-            <label className="label">Статус</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="input"
-            >
+          <Field label="№ заявки" htmlFor="edit-req-number">
+            <Input id="edit-req-number" value={number} onChange={(e) => setNumber(e.target.value)} />
+          </Field>
+          <Field label="Статус" htmlFor="edit-req-status">
+            <Select id="edit-req-status" value={status} onChange={(e) => setStatus(e.target.value)}>
               {REQUEST_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Дата заявки</label>
-            <input
+            </Select>
+          </Field>
+          <Field label="Дата заявки">
+            <Input
               value={request.requestDate ? formatDateShort(request.requestDate) : '—'}
               readOnly
-              className="input bg-gray-50 text-gray-500"
+              className="bg-gray-50 text-gray-500"
             />
-          </div>
+          </Field>
         </div>
 
-        <div>
-          <label className="label">Комментарий</label>
-          <textarea
+        <Field label="Комментарий" htmlFor="edit-req-comment">
+          <Textarea
+            id="edit-req-comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={2}
-            className="input resize-none"
             placeholder="Примечания к заявке..."
           />
-        </div>
+        </Field>
 
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="label mb-0">Позиции ({items.length})</label>
-            <button
+            <Button
               type="button"
-              className="btn-ghost text-xs"
-              onClick={() =>
-                setItems((prev) => [...prev, { article: '', quantity: 1 }])
-              }
+              variant="ghost"
+              size="sm"
+              onClick={() => setItems((prev) => [...prev, { article: '', quantity: 1 }])}
             >
               <Plus size={14} />
               Добавить позицию
-            </button>
+            </Button>
           </div>
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="max-h-72 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0 z-10">
-                  <tr className="text-left text-xs text-gray-500">
-                    <th className="px-2 py-2 font-medium">Артикул</th>
-                    <th className="px-2 py-2 font-medium">Наименование</th>
-                    <th className="px-2 py-2 font-medium w-20">Кол-во</th>
-                    <th className="px-2 py-2 font-medium">Поступление</th>
-                    <th className="px-2 py-2 font-medium">Обработать до</th>
-                    <th className="px-2 py-2 font-medium text-right">Стоимость</th>
-                    <th className="px-2 py-2 w-8" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+          <div className="max-h-72 overflow-auto">
+            <TableContainer>
+              <Table>
+                <THead>
+                  <TH>Артикул</TH>
+                  <TH>Наименование</TH>
+                  <TH className="w-20">Кол-во</TH>
+                  <TH>Поступление</TH>
+                  <TH>Обработать до</TH>
+                  <TH align="right">Стоимость</TH>
+                  <TH className="w-8" />
+                </THead>
+                <TBody>
                   {items.map((item, i) => (
-                    <tr key={i}>
-                      <td className="px-2 py-1.5">
-                        <input
+                    <TR key={i}>
+                      <TD>
+                        <Input
+                          aria-label={`Артикул позиции ${i + 1}`}
                           value={item.article}
                           onChange={(e) => setItem(i, { article: e.target.value })}
-                          className={`input text-xs py-1 font-mono w-28 ${item.skuFound === false ? 'border-amber-300 bg-amber-50' : ''}`}
+                          error={item.skuFound === false}
+                          className="text-xs py-1 font-mono w-28"
                           title={item.skuFound === false ? 'Артикул не найден в справочнике SKU' : undefined}
                         />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
+                      </TD>
+                      <TD>
+                        <Input
+                          aria-label={`Наименование позиции ${i + 1}`}
                           value={item.name ?? ''}
                           onChange={(e) => setItem(i, { name: e.target.value })}
-                          className="input text-xs py-1 w-full min-w-32"
+                          className="text-xs py-1 w-full min-w-32"
                         />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
+                      </TD>
+                      <TD>
+                        <Input
+                          aria-label={`Количество позиции ${i + 1}`}
                           value={item.quantity || ''}
-                          onChange={(e) =>
-                            setItem(i, { quantity: Number(e.target.value) || 0 })
-                          }
+                          onChange={(e) => setItem(i, { quantity: Number(e.target.value) || 0 })}
                           inputMode="numeric"
-                          className="input text-xs py-1 w-16 text-center"
+                          className="text-xs py-1 w-16 text-center"
                         />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
+                      </TD>
+                      <TD>
+                        <Input
+                          aria-label={`Дата поступления позиции ${i + 1}`}
                           type="date"
                           value={item.arrivalDate ?? ''}
                           onChange={(e) => setItem(i, { arrivalDate: e.target.value })}
-                          className="input text-xs py-1"
+                          className="text-xs py-1"
                         />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input
+                      </TD>
+                      <TD>
+                        <Input
+                          aria-label={`Обработать до позиции ${i + 1}`}
                           type="date"
                           value={item.shipmentDate ?? ''}
                           onChange={(e) => setItem(i, { shipmentDate: e.target.value })}
-                          className="input text-xs py-1"
+                          className="text-xs py-1"
                         />
-                      </td>
-                      <td className="px-2 py-1.5 text-right whitespace-nowrap text-xs">
+                      </TD>
+                      <TD align="right" className="whitespace-nowrap text-xs">
                         {item.totalCost != null ? (
                           <>
                             {Number(item.totalCost).toLocaleString('ru-RU')} ₽
@@ -712,31 +667,28 @@ function RequestEditDialog({
                         ) : (
                           <span className="text-gray-300">—</span>
                         )}
-                      </td>
-                      <td className="px-2 py-1.5">
+                      </TD>
+                      <TD>
                         <button
                           type="button"
                           className="text-gray-300 hover:text-red-500 transition-colors"
-                          onClick={() =>
-                            setItems((prev) => prev.filter((_, j) => j !== i))
-                          }
+                          onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}
                           title="Убрать позицию"
+                          aria-label={`Убрать позицию ${i + 1}`}
                         >
                           <Trash2 size={14} />
                         </button>
-                      </td>
-                    </tr>
+                      </TD>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TBody>
+              </Table>
+            </TableContainer>
             <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 flex justify-between text-sm">
               <span className="text-xs text-gray-400">
                 Стоимость пересчитается автоматически после сохранения
               </span>
-              <span className="font-semibold">
-                Итого: {total.toLocaleString('ru-RU')} ₽
-              </span>
+              <span className="font-semibold">Итого: {total.toLocaleString('ru-RU')} ₽</span>
             </div>
           </div>
         </div>
@@ -744,22 +696,12 @@ function RequestEditDialog({
         <PackingUnitsSection requestId={request.id} />
 
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={onClose}
-            disabled={update.isPending}
-          >
+          <Button variant="secondary" onClick={onClose} disabled={update.isPending}>
             Отмена
-          </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleSave}
-            disabled={update.isPending}
-          >
-            {update.isPending ? 'Сохранение...' : 'Сохранить заявку'}
-          </button>
+          </Button>
+          <Button onClick={handleSave} loading={update.isPending}>
+            Сохранить заявку
+          </Button>
         </div>
       </div>
     </Dialog>
@@ -794,11 +736,9 @@ function PackingUnitsSection({ requestId }: { requestId: number }) {
                 <div className="text-gray-400">Срок годности: {formatDateShort(u.expiryDate)}</div>
               )}
             </div>
-            <span
-              className={`badge ${u.status === 'COMPLETED' ? 'badge-green' : 'badge-gray'} whitespace-nowrap`}
-            >
+            <Badge tone={u.status === 'COMPLETED' ? 'green' : 'gray'} className="whitespace-nowrap">
               {u.status === 'COMPLETED' ? 'Завершена' : 'В работе'}
-            </span>
+            </Badge>
           </div>
         ))}
       </div>
