@@ -6,7 +6,6 @@ import {
   Pencil,
   Plus,
   Save,
-  Search,
   Trash2,
 } from 'lucide-react';
 import { usePartners } from '@/hooks/usePartners';
@@ -19,8 +18,24 @@ import {
   useSkus,
   useUpdateSku,
 } from '@/hooks/useSkus';
-import { Dialog } from '@/components/ui/Dialog';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  Dialog,
+  ConfirmDialog,
+  PageHeader,
+  SearchInput,
+  Button,
+  Select,
+  Badge,
+  EmptyState,
+  Skeleton,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import { SkuForm } from '@/components/skus/SkuForm';
 import { SkuPhotos } from '@/components/skus/SkuPhotos';
 import { SkuImportDialog } from '@/components/skus/SkuImportDialog';
@@ -102,50 +117,36 @@ export function SkusPage() {
 
   return (
     <div>
-      {/* Page title */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Справочник SKU</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {total > 0
-              ? pluralize(total, 'позиция', 'позиции', 'позиций')
-              : 'Нет позиций'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {selectedPartner && (
+      <PageHeader
+        title="Справочник SKU"
+        subtitle={total > 0 ? pluralize(total, 'позиция', 'позиции', 'позиций') : 'Нет позиций'}
+        actions={
+          selectedPartner && (
             <>
-              <button
-                className="btn-secondary"
-                onClick={() => setTariffsOpen(true)}
-              >
+              <Button variant="secondary" onClick={() => setTariffsOpen(true)}>
                 <Coins size={16} />
                 Тарифы
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={() => setImportOpen(true)}
-              >
+              </Button>
+              <Button variant="secondary" onClick={() => setImportOpen(true)}>
                 <FileSpreadsheet size={16} />
                 Импорт из Excel
-              </button>
-              <button className="btn-primary" onClick={() => setCreateOpen(true)}>
+              </Button>
+              <Button onClick={() => setCreateOpen(true)}>
                 <Plus size={16} />
                 Добавить SKU
-              </button>
+              </Button>
             </>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <select
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <Select
+          aria-label="Партнёр"
           value={partnerId ?? ''}
-          onChange={(e) =>
-            setPartnerId(e.target.value ? Number(e.target.value) : undefined)
-          }
-          className="input sm:max-w-xs"
+          onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : undefined)}
+          className="sm:max-w-xs"
         >
           <option value="">Все партнёры</option>
           {partners.map((p) => (
@@ -153,187 +154,168 @@ export function SkusPage() {
               {p.name} {!p.isActive ? '(деактивирован)' : ''}
             </option>
           ))}
-        </select>
+        </Select>
 
-        <div className="relative flex-1 max-w-md">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Поиск по артикулу, ШК, наименованию, цвету..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input pl-9"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по артикулу, ШК, наименованию, цвету..."
+        />
 
         {selectedPartner && skus.length > 0 && (
-          <button
-            className="btn text-sm px-4 py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 sm:ml-auto"
+          <Button
+            variant="secondary"
+            className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 sm:ml-auto"
             onClick={() => setClearAllOpen(true)}
           >
             <Trash2 size={14} />
             Удалить справочник
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Content */}
       {isLoading ? (
-        <div className="card p-5 animate-pulse space-y-3">
+        <div className="card p-5 space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-8" />
           ))}
         </div>
       ) : skus.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <Package size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">SKU не найдены</h3>
-          <p className="text-sm text-gray-400 mt-1 mb-6">
-            {search
+        <EmptyState
+          icon={Package}
+          title="SKU не найдены"
+          description={
+            search
               ? 'Попробуйте изменить параметры поиска'
               : selectedPartner
                 ? 'Загрузите справочник из Excel или добавьте SKU вручную'
-                : 'Выберите партнёра, чтобы загрузить справочник'}
-          </p>
-          {selectedPartner && !search && (
-            <div className="flex gap-2">
-              <button className="btn-secondary" onClick={() => setImportOpen(true)}>
-                <FileSpreadsheet size={16} />
-                Импорт из Excel
-              </button>
-              <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-                <Plus size={16} />
-                Добавить SKU
-              </button>
-            </div>
-          )}
-        </div>
+                : 'Выберите партнёра, чтобы загрузить справочник'
+          }
+          action={
+            selectedPartner &&
+            !search && (
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                  <FileSpreadsheet size={16} />
+                  Импорт из Excel
+                </Button>
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus size={16} />
+                  Добавить SKU
+                </Button>
+              </div>
+            )
+          }
+        />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">Артикул</th>
-                  <th className="px-4 py-3 font-medium">Наименование</th>
-                  {!partnerId && <th className="px-4 py-3 font-medium">Партнёр</th>}
-                  <th className="px-4 py-3 font-medium">Спец. отметки</th>
-                  <th className="px-4 py-3 font-medium text-right whitespace-nowrap">
-                    Стоимость упаковки на 1 ед.
-                  </th>
-                  <th className="px-4 py-3 font-medium">Операции</th>
-                  <th className="px-4 py-3 font-medium text-right">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {skus.map((sku) => (
-                  <tr key={sku.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">
-                      {sku.article}
-                      {sku.barcode && (
-                        <div className="text-gray-400">{sku.barcode}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => setViewSku(sku)}
-                        className="font-medium text-gray-900 hover:text-primary hover:underline text-left"
-                        title="Просмотреть карточку"
-                      >
-                        {sku.name}
-                      </button>
-                      <div className="text-xs text-gray-400">
-                        {[
-                          sku.color,
-                          sku.shelfLife && `срок: ${sku.shelfLife}`,
-                          sku.photos.length > 0 && `фото: ${sku.photos.length}`,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>Артикул</TH>
+              <TH>Наименование</TH>
+              {!partnerId && <TH>Партнёр</TH>}
+              <TH>Спец. отметки</TH>
+              <TH align="right">Стоимость упаковки на 1 ед.</TH>
+              <TH>Операции</TH>
+              <TH align="right">Действия</TH>
+            </THead>
+            <TBody>
+              {skus.map((sku) => (
+                <TR key={sku.id}>
+                  <TD className="font-mono text-xs whitespace-nowrap">
+                    {sku.article}
+                    {sku.barcode && <div className="text-gray-400">{sku.barcode}</div>}
+                  </TD>
+                  <TD>
+                    <button
+                      type="button"
+                      onClick={() => setViewSku(sku)}
+                      className="font-medium text-gray-900 hover:text-primary hover:underline text-left"
+                      title="Просмотреть карточку"
+                    >
+                      {sku.name}
+                    </button>
+                    <div className="text-xs text-gray-400">
+                      {[
+                        sku.color,
+                        sku.shelfLife && `срок: ${sku.shelfLife}`,
+                        sku.photos.length > 0 && `фото: ${sku.photos.length}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
+                  </TD>
+                  {!partnerId && (
+                    <TD className="text-xs text-gray-600">{partnerName(sku.partnerId)}</TD>
+                  )}
+                  <TD>
+                    {sku.specialMarks ? (
+                      <div className="flex flex-wrap gap-1">
+                        {sku.specialMarks.split(',').map((m, i) => (
+                          <Badge key={i} tone="amber" className="text-[11px]">
+                            {m.trim()}
+                          </Badge>
+                        ))}
                       </div>
-                    </td>
-                    {!partnerId && (
-                      <td className="px-4 py-3 text-xs text-gray-600">
-                        {partnerName(sku.partnerId)}
-                      </td>
+                    ) : (
+                      <span className="text-gray-300">—</span>
                     )}
-                    <td className="px-4 py-3">
-                      {sku.specialMarks ? (
-                        <div className="flex flex-wrap gap-1">
-                          {sku.specialMarks.split(',').map((m, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-medium whitespace-nowrap"
-                            >
-                              {m.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-[13px] tabular-nums whitespace-nowrap">
-                      {sku.packCostUnit != null
-                        ? `${Number(sku.packCostUnit).toLocaleString('ru-RU')} ₽`
-                        : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {sku.operations.length > 0 ? (
-                        <div
-                          className="flex flex-wrap gap-1 max-w-xs"
-                          title={sku.operations
-                            .map((so) => so.operation.name)
-                            .join('\n')}
-                        >
-                          {sku.operations.slice(0, 3).map((so) => (
-                            <span
-                              key={so.id}
-                              className="px-2 py-0.5 rounded-full bg-primary-50 text-primary text-[11px] font-medium whitespace-nowrap"
-                            >
-                              {shortOpName(so.operation.name)}
-                            </span>
-                          ))}
-                          {sku.operations.length > 3 && (
-                            <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[11px] font-medium">
-                              +{sku.operations.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1 justify-end">
-                        <button
-                          className="btn-ghost text-xs p-2"
-                          onClick={() => setEditSku(sku)}
-                          title="Редактировать"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          className="btn-ghost text-xs p-2 text-red-500 hover:bg-red-50"
-                          onClick={() => setDeleteSkuTarget(sku)}
-                          title="Удалить"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                  </TD>
+                  <TD align="right" className="font-mono text-[13px] whitespace-nowrap">
+                    {sku.packCostUnit != null ? (
+                      `${Number(sku.packCostUnit).toLocaleString('ru-RU')} ₽`
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TD>
+                  <TD>
+                    {sku.operations.length > 0 ? (
+                      <div
+                        className="flex flex-wrap gap-1 max-w-xs"
+                        title={sku.operations.map((so) => so.operation.name).join('\n')}
+                      >
+                        {sku.operations.slice(0, 3).map((so) => (
+                          <Badge key={so.id} tone="primary" className="text-[11px]">
+                            {shortOpName(so.operation.name)}
+                          </Badge>
+                        ))}
+                        {sku.operations.length > 3 && (
+                          <Badge tone="gray" className="text-[11px]">
+                            +{sku.operations.length - 3}
+                          </Badge>
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TD>
+                  <TD align="right">
+                    <div className="flex gap-1 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditSku(sku)}
+                        title="Редактировать"
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:bg-red-50"
+                        onClick={() => setDeleteSkuTarget(sku)}
+                        title="Удалить"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </TableContainer>
       )}
 
       {/* Просмотр карточки (без редактирования) */}
@@ -357,15 +339,10 @@ export function SkusPage() {
         size="xl"
         isDirty={createDirty}
         headerActions={
-          <button
-            type="submit"
-            form="sku-form-create"
-            className="btn-primary text-xs px-3 py-1.5"
-            disabled={createSku.isPending}
-          >
+          <Button type="submit" form="sku-form-create" size="sm" loading={createSku.isPending}>
             <Save size={14} />
-            {createSku.isPending ? 'Сохранение...' : 'Сохранить'}
-          </button>
+            Сохранить
+          </Button>
         }
       >
         <SkuForm
@@ -395,15 +372,10 @@ export function SkusPage() {
         isDirty={editDirty}
         headerActions={
           editSkuFresh && (
-            <button
-              type="submit"
-              form="sku-form-edit"
-              className="btn-primary text-xs px-3 py-1.5"
-              disabled={updateSku.isPending}
-            >
+            <Button type="submit" form="sku-form-edit" size="sm" loading={updateSku.isPending}>
               <Save size={14} />
-              {updateSku.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
+              Сохранить
+            </Button>
           )
         }
       >

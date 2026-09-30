@@ -20,27 +20,31 @@ import {
   useInventoryTasks,
   useRemoveExecutor,
 } from '@/hooks/useInventory';
-import { Dialog } from '@/components/ui/Dialog';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  Dialog,
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  Field,
+  Badge,
+  statusTone,
+  EmptyState,
+  Skeleton,
+  SegmentedControl,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import { exportInv5ToExcel } from '@/lib/exportInv5';
 import type { InventoryTask } from '@/types/inventory';
 import { formatDate } from '@/lib/utils';
-
-const STATUS_STYLES: Record<string, string> = {
-  Создана: 'bg-gray-100 text-gray-600 ring-gray-500/10',
-  Процесс: 'bg-blue-50 text-blue-700 ring-blue-600/15',
-  Выполнено: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-  Отмена: 'bg-red-50 text-red-600 ring-red-600/15',
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600 ring-gray-500/10';
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ring-1 ring-inset ${cls}`}>
-      {status}
-    </span>
-  );
-}
 
 export function InventoryPage() {
   const [createOpen, setCreateOpen] = useState(false);
@@ -62,104 +66,98 @@ export function InventoryPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Инвентаризация</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {data?.total ? `${data.total} заданий` : 'Заданий нет'}
-          </p>
-        </div>
-        <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-          <Plus size={16} />
-          Создать задание
-        </button>
-      </div>
+      <PageHeader
+        title="Инвентаризация"
+        subtitle={data?.total ? `${data.total} заданий` : 'Заданий нет'}
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus size={16} />
+            Создать задание
+          </Button>
+        }
+      />
 
       {isLoading ? (
-        <div className="card p-5 animate-pulse space-y-3">
+        <div className="card p-5 space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-10" />
           ))}
         </div>
       ) : tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <ListChecks size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">Заданий нет</h3>
-          <p className="text-sm text-gray-400 mt-1 mb-6">
-            Создайте задание по остаткам партнёра или по всему складу
-          </p>
-          <button className="btn-primary" onClick={() => setCreateOpen(true)}>
-            <Plus size={16} />
-            Создать задание
-          </button>
-        </div>
+        <EmptyState
+          icon={ListChecks}
+          title="Заданий нет"
+          description="Создайте задание по остаткам партнёра или по всему складу"
+          action={
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus size={16} />
+              Создать задание
+            </Button>
+          }
+        />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium">№ ИНВ</th>
-                  <th className="px-4 py-3 font-medium">Партнёр</th>
-                  <th className="px-4 py-3 font-medium">Источник</th>
-                  <th className="px-4 py-3 font-medium text-center">Позиций</th>
-                  <th className="px-4 py-3 font-medium">Исполнители</th>
-                  <th className="px-4 py-3 font-medium">Статус</th>
-                  <th className="px-4 py-3 font-medium text-right">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tasks.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
-                      {t.number}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{t.partner?.name ?? 'Весь склад'}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      {t.source === 'PARTNER' ? 'По инициативе партнёра' : 'Внутренняя'}
-                    </td>
-                    <td className="px-4 py-3 text-center">{t.items.length}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
-                      {t.executors.length ? t.executors.map((e) => e.employeeId).join(', ') : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={t.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1 justify-end">
-                        <button className="btn-ghost text-xs p-2" onClick={() => setHistoryTarget(t)} title="История">
-                          <History size={14} />
-                        </button>
-                        <button className="btn-ghost text-xs p-2" onClick={() => exportInv5ToExcel(t)} title="Экспорт ИНВ-5">
-                          <FileDown size={14} />
-                        </button>
-                        {t.status !== 'Выполнено' && t.status !== 'Отмена' && (
-                          <>
-                            <button className="btn-ghost text-xs p-2" onClick={() => setExecTarget(t)} title="Исполнители">
-                              <UserPlus size={14} />
-                            </button>
-                            <button className="btn-ghost text-xs p-2" onClick={() => setCountTarget(t)} title="Пересчёт">
-                              <ClipboardCheck size={14} />
-                            </button>
-                            <button
-                              className="btn-ghost text-xs p-2 text-amber-600 hover:bg-amber-50"
-                              onClick={() => setCancelTarget(t)}
-                              title="Отменить"
-                            >
-                              <Ban size={14} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>№ ИНВ</TH>
+              <TH>Партнёр</TH>
+              <TH>Источник</TH>
+              <TH align="center">Позиций</TH>
+              <TH>Исполнители</TH>
+              <TH>Статус</TH>
+              <TH align="right">Действия</TH>
+            </THead>
+            <TBody>
+              {tasks.map((t) => (
+                <TR key={t.id}>
+                  <TD className="font-mono text-[13px] font-medium text-gray-900 whitespace-nowrap">
+                    {t.number}
+                  </TD>
+                  <TD className="text-gray-600">{t.partner?.name ?? 'Весь склад'}</TD>
+                  <TD className="text-xs text-gray-500">
+                    {t.source === 'PARTNER' ? 'По инициативе партнёра' : 'Внутренняя'}
+                  </TD>
+                  <TD align="center">{t.items.length}</TD>
+                  <TD className="text-xs text-gray-500">
+                    {t.executors.length ? t.executors.map((e) => e.employeeId).join(', ') : '—'}
+                  </TD>
+                  <TD>
+                    <Badge tone={statusTone(t.status)}>{t.status}</Badge>
+                  </TD>
+                  <TD align="right">
+                    <div className="flex gap-1 justify-end">
+                      <Button variant="ghost" size="icon" onClick={() => setHistoryTarget(t)} title="История">
+                        <History size={14} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => exportInv5ToExcel(t)} title="Экспорт ИНВ-5">
+                        <FileDown size={14} />
+                      </Button>
+                      {t.status !== 'Выполнено' && t.status !== 'Отмена' && (
+                        <>
+                          <Button variant="ghost" size="icon" onClick={() => setExecTarget(t)} title="Исполнители">
+                            <UserPlus size={14} />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setCountTarget(t)} title="Пересчёт">
+                            <ClipboardCheck size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-amber-600 hover:bg-amber-50"
+                            onClick={() => setCancelTarget(t)}
+                            title="Отменить"
+                          >
+                            <Ban size={14} />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </TableContainer>
       )}
 
       <CreateTaskDialog open={createOpen} onClose={() => setCreateOpen(false)} />
@@ -220,58 +218,52 @@ function CreateTaskDialog({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <Dialog open={open} onClose={handleClose} title="Создать задание на инвентаризацию" size="md">
       <div className="space-y-4">
-        <div>
-          <label className="label">Источник</label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className={`btn text-sm px-4 py-2 flex-1 ${source === 'PARTNER' ? 'bg-primary text-white' : 'bg-white text-gray-600 border border-gray-300'}`}
-              onClick={() => setSource('PARTNER')}
-            >
-              По инициативе партнёра
-            </button>
-            <button
-              type="button"
-              className={`btn text-sm px-4 py-2 flex-1 ${source === 'INTERNAL' ? 'bg-primary text-white' : 'bg-white text-gray-600 border border-gray-300'}`}
-              onClick={() => setSource('INTERNAL')}
-            >
-              Внутренняя (весь склад)
-            </button>
-          </div>
-        </div>
+        <Field label="Источник">
+          <SegmentedControl
+            aria-label="Источник задания"
+            value={source}
+            onChange={setSource}
+            segments={[
+              { label: 'По инициативе партнёра', value: 'PARTNER' },
+              { label: 'Внутренняя (весь склад)', value: 'INTERNAL' },
+            ]}
+          />
+        </Field>
 
         {source === 'PARTNER' && (
-          <div>
-            <label className="label">Партнёр *</label>
-            <select value={partnerId} onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : '')} className="input">
+          <Field label="Партнёр" required htmlFor="inv-partner">
+            <Select
+              id="inv-partner"
+              value={partnerId}
+              onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : '')}
+            >
               <option value="">Выберите...</option>
               {partners.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
         )}
 
-        <div>
-          <label className="label">Артикулы (по одному в строке или через запятую)</label>
-          <textarea
+        <Field label="Артикулы (по одному в строке или через запятую)" htmlFor="inv-articles">
+          <Textarea
+            id="inv-articles"
             value={articlesText}
             onChange={(e) => setArticlesText(e.target.value)}
             rows={4}
-            className="input resize-none"
             placeholder="Оставьте пустым, чтобы взять все артикулы на остатках"
           />
-        </div>
+        </Field>
 
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-          <button type="button" className="btn-secondary" onClick={handleClose} disabled={create.isPending}>
+          <Button variant="secondary" onClick={handleClose} disabled={create.isPending}>
             Отмена
-          </button>
-          <button type="button" className="btn-primary" onClick={handleSubmit} disabled={create.isPending}>
-            {create.isPending ? 'Создание...' : 'Создать'}
-          </button>
+          </Button>
+          <Button onClick={handleSubmit} loading={create.isPending}>
+            Создать
+          </Button>
         </div>
       </div>
     </Dialog>
@@ -301,46 +293,45 @@ function CountDialog({ task, onClose }: { task: InventoryTask; onClose: () => vo
   return (
     <Dialog open onClose={onClose} title={`Пересчёт — ${task.number}`} size="lg">
       <div className="space-y-4">
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs text-gray-500">
-                <th className="px-3 py-2 font-medium">Артикул</th>
-                <th className="px-3 py-2 font-medium">Место хранения</th>
-                <th className="px-3 py-2 font-medium text-center">По учёту</th>
-                <th className="px-3 py-2 font-medium text-center w-28">Факт</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+        <TableContainer>
+          <Table>
+            <THead>
+              <TH>Артикул</TH>
+              <TH>Место хранения</TH>
+              <TH align="center">По учёту</TH>
+              <TH align="center">Факт</TH>
+            </THead>
+            <TBody>
               {task.items.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-3 py-2 font-mono text-xs">{item.article}</td>
-                  <td className="px-3 py-2 text-gray-500">{item.address ?? '—'}</td>
-                  <td className="px-3 py-2 text-center text-gray-500">{item.expectedQty}</td>
-                  <td className="px-3 py-2">
-                    <input
+                <TR key={item.id}>
+                  <TD className="font-mono text-xs">{item.article}</TD>
+                  <TD className="text-gray-500">{item.address ?? '—'}</TD>
+                  <TD align="center" className="text-gray-500">{item.expectedQty}</TD>
+                  <TD align="center" className="w-28">
+                    <Input
+                      aria-label={`Факт по ${item.article}`}
                       value={counts[item.id] ?? ''}
                       onChange={(e) => setCounts((prev) => ({ ...prev, [item.id]: e.target.value }))}
                       inputMode="numeric"
-                      className="input text-center py-1"
+                      className="text-center py-1"
                     />
-                  </td>
-                </tr>
+                  </TD>
+                </TR>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
+        </TableContainer>
         <p className="text-xs text-gray-400">
           Задание могут считать несколько исполнителей — каждый присылает факт по своим позициям.
           Когда факт указан по всем — задание переходит в «Выполнено».
         </p>
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={count.isPending}>
+          <Button variant="secondary" onClick={onClose} disabled={count.isPending}>
             Отмена
-          </button>
-          <button type="button" className="btn-primary" onClick={handleSubmit} disabled={count.isPending}>
-            {count.isPending ? 'Сохранение...' : 'Подтвердить пересчёт'}
-          </button>
+          </Button>
+          <Button onClick={handleSubmit} loading={count.isPending}>
+            Подтвердить пересчёт
+          </Button>
         </div>
       </div>
     </Dialog>
@@ -372,6 +363,7 @@ function ExecutorsDialog({ task, onClose }: { task: InventoryTask; onClose: () =
                 <button
                   className="text-gray-300 hover:text-red-500 transition-colors"
                   onClick={() => setRemoveTarget(e.employeeId)}
+                  aria-label={`Снять ${e.employeeId}`}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -393,15 +385,16 @@ function ExecutorsDialog({ task, onClose }: { task: InventoryTask; onClose: () =
           loading={remove.isPending}
         />
         <div className="flex gap-2">
-          <input
+          <Input
+            aria-label="Табельный номер исполнителя"
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
             placeholder="Табельный номер / ШК"
-            className="input flex-1"
+            className="flex-1"
           />
-          <button className="btn-primary" onClick={handleAdd} disabled={add.isPending}>
+          <Button onClick={handleAdd} loading={add.isPending}>
             Добавить
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>
@@ -414,9 +407,9 @@ function HistoryDialog({ task, onClose }: { task: InventoryTask; onClose: () => 
   return (
     <Dialog open onClose={onClose} title={`История статусов — ${task.number}`} size="sm">
       {isLoading ? (
-        <div className="space-y-2 animate-pulse">
+        <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-8" />
           ))}
         </div>
       ) : !history?.length ? (
@@ -425,7 +418,7 @@ function HistoryDialog({ task, onClose }: { task: InventoryTask; onClose: () => 
         <ol className="space-y-3">
           {history.map((h) => (
             <li key={h.id} className="flex items-start gap-3 text-sm">
-              <StatusBadge status={h.status} />
+              <Badge tone={statusTone(h.status)}>{h.status}</Badge>
               <div className="min-w-0">
                 <p className="text-gray-700">{h.changedBy}</p>
                 <p className="text-xs text-gray-400">{formatDate(h.changedAt)}</p>

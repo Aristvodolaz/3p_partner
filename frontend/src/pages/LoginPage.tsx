@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { Button, Input, Field } from '@/components/ui';
 
 export function LoginPage() {
   const [employeeId, setEmployeeId] = useState('');
@@ -65,20 +66,21 @@ export function LoginPage() {
             Введите табельный номер или ШК сотрудника
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Табельный номер / ШК</label>
-              <input
+            <Field label="Табельный номер / ШК" htmlFor="login-employee-id">
+              <Input
+                id="login-employee-id"
                 autoFocus
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 placeholder="Например, 10234"
-                className="input font-mono tracking-wide"
+                className="font-mono tracking-wide"
               />
-            </div>
-            <button
+            </Field>
+            <Button
               type="submit"
-              disabled={isLoading || !employeeId.trim()}
-              className="btn-primary w-full justify-center group"
+              loading={isLoading}
+              disabled={!employeeId.trim()}
+              className="w-full group"
             >
               {isLoading ? 'Вход...' : 'Войти'}
               {!isLoading && (
@@ -87,7 +89,7 @@ export function LoginPage() {
                   className="transition-transform group-hover:translate-x-0.5"
                 />
               )}
-            </button>
+            </Button>
           </form>
         </div>
 
