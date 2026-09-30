@@ -22,8 +22,25 @@ import {
   useTariffHistory,
   useUpdateOperation,
 } from '@/hooks/useSkus';
-import { Dialog } from '@/components/ui/Dialog';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  Dialog,
+  ConfirmDialog,
+  PageHeader,
+  Button,
+  Input,
+  Select,
+  Textarea,
+  Field,
+  EmptyState,
+  Skeleton,
+  TableContainer,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from '@/components/ui';
 import { parseTariffsExcel, type TariffParseResult } from '@/lib/importTariffsExcel';
 import { formatDateShort } from '@/lib/utils';
 import type { Operation } from '@/types/sku';
@@ -118,51 +135,45 @@ export function TariffsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold text-gray-900 tracking-tight">Тарифы по операциям</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Цены за каждую операцию по партнёрам
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button className="btn-secondary" onClick={() => setCreateOpOpen(true)}>
-            <Plus size={16} />
-            Добавить операцию
-          </button>
-          {selectedPartner && (
-            <button className="btn-secondary" onClick={() => setHistoryOpen(true)}>
-              <History size={16} />
-              История
-            </button>
-          )}
-          {selectedPartner && (
-            <button className="btn-secondary" onClick={() => setImportOpen(true)}>
-              <FileSpreadsheet size={16} />
-              Импорт из Excel
-            </button>
-          )}
-          {selectedPartner && hasChanges && (
-            <button
-              className="btn-primary"
-              onClick={handleSave}
-              disabled={setTariffs.isPending || updateOperation.isPending}
-            >
-              {setTariffs.isPending || updateOperation.isPending
-                ? 'Сохранение...'
-                : 'Сохранить изменения'}
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Тарифы по операциям"
+        subtitle="Цены за каждую операцию по партнёрам"
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setCreateOpOpen(true)}>
+              <Plus size={16} />
+              Добавить операцию
+            </Button>
+            {selectedPartner && (
+              <Button variant="secondary" onClick={() => setHistoryOpen(true)}>
+                <History size={16} />
+                История
+              </Button>
+            )}
+            {selectedPartner && (
+              <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                <FileSpreadsheet size={16} />
+                Импорт из Excel
+              </Button>
+            )}
+            {selectedPartner && hasChanges && (
+              <Button
+                onClick={handleSave}
+                loading={setTariffs.isPending || updateOperation.isPending}
+              >
+                Сохранить изменения
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <select
+        <Select
+          aria-label="Партнёр"
           value={partnerId ?? ''}
-          onChange={(e) =>
-            setPartnerId(e.target.value ? Number(e.target.value) : undefined)
-          }
-          className="input sm:max-w-xs"
+          onChange={(e) => setPartnerId(e.target.value ? Number(e.target.value) : undefined)}
+          className="sm:max-w-xs"
         >
           <option value="">Выберите партнёра...</option>
           {partners.map((p) => (
@@ -170,52 +181,45 @@ export function TariffsPage() {
               {p.name} {!p.isActive ? '(деактивирован)' : ''}
             </option>
           ))}
-        </select>
+        </Select>
 
         {selectedPartner && (tariffs?.length ?? 0) > 0 && (
-          <button
-            className="btn text-sm px-4 py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 sm:ml-auto"
+          <Button
+            variant="secondary"
+            className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 sm:ml-auto"
             onClick={() => setClearOpen(true)}
           >
             <Trash2 size={14} />
             Удалить все тарифы
-          </button>
+          </Button>
         )}
       </div>
 
       {!selectedPartner ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-            <Coins size={28} className="text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-700">Выберите партнёра</h3>
-          <p className="text-sm text-gray-400 mt-1">
-            Тарифы ведутся отдельно по каждому партнёру
-          </p>
-        </div>
+        <EmptyState
+          icon={Coins}
+          title="Выберите партнёра"
+          description="Тарифы ведутся отдельно по каждому партнёру"
+        />
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-3 font-medium w-1/3">Операция</th>
-                  <th className="px-4 py-3 font-medium">Описание</th>
-                  <th className="px-4 py-3 font-medium whitespace-nowrap">Относится к</th>
-                  <th className="px-4 py-3 font-medium whitespace-nowrap">Ед. измерения</th>
-                  <th className="px-4 py-3 font-medium text-right whitespace-nowrap">
-                    Тариф, руб. с НДС
-                  </th>
-                  <th className="px-4 py-3 font-medium w-8" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+            <Table>
+              <THead>
+                <TH className="w-1/3">Операция</TH>
+                <TH>Описание</TH>
+                <TH>Относится к</TH>
+                <TH>Ед. измерения</TH>
+                <TH align="right">Тариф, руб. с НДС</TH>
+                <TH className="w-8" />
+              </THead>
+              <TBody>
                 {operations.map((op) => {
                   const saved = tariffByCode.get(op.code);
                   const draft = tariffDraft[op.code];
                   return (
-                    <tr key={op.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2.5 text-gray-900">
+                    <TR key={op.id}>
+                      <TD className="text-gray-900">
                         {op.name}
                         {op.applySizeCoef && (
                           <span
@@ -225,9 +229,10 @@ export function TariffsPage() {
                             К
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </TD>
+                      <TD>
                         <input
+                          aria-label={`Описание операции ${op.name}`}
                           value={descDraft[op.id] ?? op.description ?? ''}
                           onChange={(e) =>
                             setDescDraft((prev) => ({ ...prev, [op.id]: e.target.value }))
@@ -235,9 +240,10 @@ export function TariffsPage() {
                           placeholder="Описание операции..."
                           className="w-full bg-transparent text-gray-600 text-sm border-0 border-b border-transparent hover:border-gray-200 focus:border-primary focus:outline-none focus:ring-0 py-1"
                         />
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </TD>
+                      <TD>
                         <select
+                          aria-label={`Этап операции ${op.name}`}
                           value={phaseDraft[op.id] ?? op.phase}
                           onChange={(e) =>
                             setPhaseDraft((prev) => ({
@@ -251,39 +257,36 @@ export function TariffsPage() {
                           <option value="INCOMING">Приёмке</option>
                           <option value="BOTH">Обеим</option>
                         </select>
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                        {op.unit ?? '—'}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <input
+                      </TD>
+                      <TD className="text-gray-500 whitespace-nowrap">{op.unit ?? '—'}</TD>
+                      <TD align="right">
+                        <Input
+                          aria-label={`Тариф операции ${op.name}`}
                           value={draft ?? saved ?? ''}
                           onChange={(e) =>
-                            setTariffDraft((prev) => ({
-                              ...prev,
-                              [op.code]: e.target.value,
-                            }))
+                            setTariffDraft((prev) => ({ ...prev, [op.code]: e.target.value }))
                           }
                           placeholder={op.tariff ?? '—'}
                           inputMode="decimal"
-                          className="input w-24 text-right text-sm py-1 ml-auto"
+                          className="w-24 text-right text-sm py-1 ml-auto"
                         />
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
+                      </TD>
+                      <TD align="right">
                         <button
                           type="button"
                           className="text-gray-300 hover:text-red-500 transition-colors"
                           onClick={() => setDeleteOpTarget(op)}
                           title="Удалить операцию из справочника"
+                          aria-label={`Удалить операцию ${op.name}`}
                         >
                           <Trash2 size={14} />
                         </button>
-                      </td>
-                    </tr>
+                      </TD>
+                    </TR>
                   );
                 })}
-              </tbody>
-            </table>
+              </TBody>
+            </Table>
           </div>
           <div className="px-4 py-2.5 text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
             Пустое поле — тариф для партнёра не задан (серым показан тариф по умолчанию).
@@ -305,26 +308,22 @@ export function TariffsPage() {
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-4 py-2 font-medium">Коэффициент</th>
-                  <th className="px-4 py-2 font-medium">Тариф</th>
-                  <th className="px-4 py-2 font-medium">Сумма трёх сторон</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+            <Table>
+              <THead>
+                <TH>Коэффициент</TH>
+                <TH>Тариф</TH>
+                <TH>Сумма трёх сторон</TH>
+              </THead>
+              <TBody>
                 {coefficients.map((c) => (
-                  <tr key={c.id}>
-                    <td className="px-4 py-2 font-medium">{c.code}</td>
-                    <td className="px-4 py-2">
-                      {Number(c.multiplier) === 1 ? 'Базовый' : `×${c.multiplier}`}
-                    </td>
-                    <td className="px-4 py-2 text-gray-500">{c.label}</td>
-                  </tr>
+                  <TR key={c.id}>
+                    <TD className="font-medium">{c.code}</TD>
+                    <TD>{Number(c.multiplier) === 1 ? 'Базовый' : `×${c.multiplier}`}</TD>
+                    <TD className="text-gray-500">{c.label}</TD>
+                  </TR>
                 ))}
-              </tbody>
-            </table>
+              </TBody>
+            </Table>
           </div>
         </div>
       )}
@@ -446,39 +445,35 @@ function CreateOperationDialog({
   return (
     <Dialog open={open} onClose={handleClose} title="Добавить операцию в справочник" size="sm">
       <div className="space-y-4">
-        <div>
-          <label className="label">Название *</label>
-          <input
+        <Field label="Название" required htmlFor="op-name">
+          <Input
+            id="op-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Упаковка в стрейч-плёнку"
-            className="input"
             autoFocus
           />
-        </div>
-        <div>
-          <label className="label">Единица измерения</label>
-          <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="шт." className="input" />
-        </div>
-        <div>
-          <label className="label">Описание</label>
-          <textarea
+        </Field>
+        <Field label="Единица измерения" htmlFor="op-unit">
+          <Input id="op-unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="шт." />
+        </Field>
+        <Field label="Описание" htmlFor="op-desc">
+          <Textarea
+            id="op-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="input resize-none"
           />
-        </div>
-        <div>
-          <label className="label">Тариф по умолчанию, руб. с НДС</label>
-          <input
+        </Field>
+        <Field label="Тариф по умолчанию, руб. с НДС" htmlFor="op-tariff">
+          <Input
+            id="op-tariff"
             value={tariff}
             onChange={(e) => setTariff(e.target.value)}
             inputMode="decimal"
             placeholder="10"
-            className="input"
           />
-        </div>
+        </Field>
         <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
           <input
             type="checkbox"
@@ -488,25 +483,20 @@ function CreateOperationDialog({
           />
           Применять размерный коэффициент К по ШДВ
         </label>
-        <div>
-          <label className="label">Относится к</label>
-          <select
-            value={phase}
-            onChange={(e) => setPhase(e.target.value as typeof phase)}
-            className="input"
-          >
+        <Field label="Относится к" htmlFor="op-phase">
+          <Select id="op-phase" value={phase} onChange={(e) => setPhase(e.target.value as typeof phase)}>
             <option value="OUTGOING">Отгрузке (ИСП)</option>
             <option value="INCOMING">Приёмке (ВХП)</option>
             <option value="BOTH">Обеим</option>
-          </select>
-        </div>
+          </Select>
+        </Field>
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-          <button type="button" className="btn-secondary" onClick={handleClose} disabled={isLoading}>
+          <Button variant="secondary" onClick={handleClose} disabled={isLoading}>
             Отмена
-          </button>
-          <button type="button" className="btn-primary" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? 'Добавление...' : 'Добавить'}
-          </button>
+          </Button>
+          <Button onClick={handleSubmit} loading={isLoading}>
+            Добавить
+          </Button>
         </div>
       </div>
     </Dialog>
@@ -583,10 +573,10 @@ function TariffImportDialog({
           <p className="text-xs text-gray-400 mt-1">
             Колонки: Операция, Единица измерения, Тариф руб. с НДС
           </p>
-          <button type="button" className="btn-primary mt-4">
+          <Button type="button" className="mt-4">
             <Upload size={16} />
             Выбрать файл
-          </button>
+          </Button>
           <input
             ref={inputRef}
             type="file"
@@ -603,9 +593,9 @@ function TariffImportDialog({
               <span className="font-medium">{fileName}</span>
               <span className="text-gray-400">— {parsed.items.length} операций</span>
             </div>
-            <button type="button" className="btn-ghost text-xs" onClick={reset}>
+            <Button type="button" variant="ghost" size="sm" onClick={reset}>
               Выбрать другой файл
-            </button>
+            </Button>
           </div>
 
           {parsed.warnings.length > 0 && (
@@ -622,31 +612,25 @@ function TariffImportDialog({
             </div>
           )}
 
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="max-h-64 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr className="text-left text-xs text-gray-500">
-                    <th className="px-3 py-2 font-medium">Операция</th>
-                    <th className="px-3 py-2 font-medium">Ед. изм.</th>
-                    <th className="px-3 py-2 font-medium text-right">Тариф</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+          <div className="max-h-64 overflow-auto">
+            <TableContainer>
+              <Table>
+                <THead>
+                  <TH>Операция</TH>
+                  <TH>Ед. изм.</TH>
+                  <TH align="right">Тариф</TH>
+                </THead>
+                <TBody>
                   {parsed.items.map((item, i) => (
-                    <tr key={i}>
-                      <td className="px-3 py-2">{item.name}</td>
-                      <td className="px-3 py-2 text-xs text-gray-500">
-                        {item.unit ?? '—'}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono text-xs">
-                        {item.tariff}
-                      </td>
-                    </tr>
+                    <TR key={i}>
+                      <TD>{item.name}</TD>
+                      <TD className="text-xs text-gray-500">{item.unit ?? '—'}</TD>
+                      <TD align="right" className="font-mono text-xs">{item.tariff}</TD>
+                    </TR>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TBody>
+              </Table>
+            </TableContainer>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -675,24 +659,12 @@ function TariffImportDialog({
           </div>
 
           <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleClose}
-              disabled={importTariffs.isPending}
-            >
+            <Button variant="secondary" onClick={handleClose} disabled={importTariffs.isPending}>
               Отмена
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleImport}
-              disabled={importTariffs.isPending}
-            >
-              {importTariffs.isPending
-                ? 'Импорт...'
-                : `Загрузить ${parsed.items.length} тарифов`}
-            </button>
+            </Button>
+            <Button onClick={handleImport} loading={importTariffs.isPending}>
+              {`Загрузить ${parsed.items.length} тарифов`}
+            </Button>
           </div>
         </div>
       )}
@@ -721,9 +693,9 @@ function TariffHistoryDialog({
       size="lg"
     >
       {isLoading ? (
-        <div className="space-y-2 animate-pulse">
+        <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-200 rounded" />
+            <Skeleton key={i} className="h-8" />
           ))}
         </div>
       ) : !history?.length ? (
@@ -731,39 +703,33 @@ function TariffHistoryDialog({
           Изменений тарифов ещё не было
         </p>
       ) : (
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
-          <div className="max-h-96 overflow-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-3 py-2 font-medium">Дата</th>
-                  <th className="px-3 py-2 font-medium">Операция</th>
-                  <th className="px-3 py-2 font-medium text-right">Было</th>
-                  <th className="px-3 py-2 font-medium text-right">Стало</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+        <div className="max-h-96 overflow-auto">
+          <TableContainer>
+            <Table>
+              <THead>
+                <TH>Дата</TH>
+                <TH>Операция</TH>
+                <TH align="right">Было</TH>
+                <TH align="right">Стало</TH>
+              </THead>
+              <TBody>
                 {history.map((h) => (
-                  <tr key={h.id}>
-                    <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+                  <TR key={h.id}>
+                    <TD className="text-xs text-gray-500 whitespace-nowrap">
                       {formatDateShort(h.changedAt)}
-                    </td>
-                    <td className="px-3 py-2">{h.operation.name}</td>
-                    <td className="px-3 py-2 text-right font-mono text-xs text-gray-400">
+                    </TD>
+                    <TD>{h.operation.name}</TD>
+                    <TD align="right" className="font-mono text-xs text-gray-400">
                       {h.oldTariff ?? '—'}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-xs">
-                      {h.newTariff != null ? (
-                        h.newTariff
-                      ) : (
-                        <span className="text-red-500">удалён</span>
-                      )}
-                    </td>
-                  </tr>
+                    </TD>
+                    <TD align="right" className="font-mono text-xs">
+                      {h.newTariff != null ? h.newTariff : <span className="text-red-500">удалён</span>}
+                    </TD>
+                  </TR>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TBody>
+            </Table>
+          </TableContainer>
         </div>
       )}
     </Dialog>
