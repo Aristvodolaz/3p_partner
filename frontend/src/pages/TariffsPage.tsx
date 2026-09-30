@@ -36,9 +36,10 @@ export function TariffsPage() {
   const [createOpOpen, setCreateOpOpen] = useState(false);
   const [deleteOpTarget, setDeleteOpTarget] = useState<Operation | null>(null);
 
-  // Черновики правок: тарифы (code → строка) и описания (opId → строка)
+  // Черновики правок: тарифы (code → строка), описания и этап (opId → строка)
   const [tariffDraft, setTariffDraft] = useState<Record<string, string>>({});
   const [descDraft, setDescDraft] = useState<Record<number, string>>({});
+  const [phaseDraft, setPhaseDraft] = useState<Record<number, 'INCOMING' | 'OUTGOING' | 'BOTH'>>({});
 
   const { data: partnersData } = usePartners();
   const { data: operations = [] } = useOperations();
@@ -66,6 +67,7 @@ export function TariffsPage() {
   useEffect(() => {
     setTariffDraft({});
     setDescDraft({});
+    setPhaseDraft({});
   }, [partnerId, tariffs]);
 
   const dirtyTariffs = Object.entries(tariffDraft).filter(([code, v]) => {
@@ -76,7 +78,11 @@ export function TariffsPage() {
     const op = operations.find((o) => o.id === Number(id));
     return op && v !== (op.description ?? '');
   });
-  const hasChanges = dirtyTariffs.length > 0 || dirtyDescs.length > 0;
+  const dirtyPhases = Object.entries(phaseDraft).filter(([id, v]) => {
+    const op = operations.find((o) => o.id === Number(id));
+    return op && v !== op.phase;
+  });
+  const hasChanges = dirtyTariffs.length > 0 || dirtyDescs.length > 0 || dirtyPhases.length > 0;
 
   const handleSave = async () => {
     if (!partnerId) return;
@@ -95,8 +101,13 @@ export function TariffsPage() {
     for (const [id, description] of dirtyDescs) {
       await updateOperation.mutateAsync({ id: Number(id), description });
     }
+    // Этап (приёмка/отгрузка/обе)
+    for (const [id, phase] of dirtyPhases) {
+      await updateOperation.mutateAsync({ id: Number(id), phase });
+    }
     setTariffDraft({});
     setDescDraft({});
+    setPhaseDraft({});
   };
 
   const handleClear = async () => {
@@ -190,6 +201,7 @@ export function TariffsPage() {
                 <tr className="text-left text-xs text-gray-500">
                   <th className="px-4 py-3 font-medium w-1/3">Операция</th>
                   <th className="px-4 py-3 font-medium">Описание</th>
+                  <th className="px-4 py-3 font-medium whitespace-nowrap">Относится к</th>
                   <th className="px-4 py-3 font-medium whitespace-nowrap">Ед. измерения</th>
                   <th className="px-4 py-3 font-medium text-right whitespace-nowrap">
                     Тариф, руб. с НДС
@@ -223,6 +235,22 @@ export function TariffsPage() {
                           placeholder="Описание операции..."
                           className="w-full bg-transparent text-gray-600 text-sm border-0 border-b border-transparent hover:border-gray-200 focus:border-primary focus:outline-none focus:ring-0 py-1"
                         />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <select
+                          value={phaseDraft[op.id] ?? op.phase}
+                          onChange={(e) =>
+                            setPhaseDraft((prev) => ({
+                              ...prev,
+                              [op.id]: e.target.value as 'INCOMING' | 'OUTGOING' | 'BOTH',
+                            }))
+                          }
+                          className="bg-transparent text-gray-600 text-sm border-0 border-b border-transparent hover:border-gray-200 focus:border-primary focus:outline-none focus:ring-0 py-1"
+                        >
+                          <option value="OUTGOING">Отгрузке</option>
+                          <option value="INCOMING">Приёмке</option>
+                          <option value="BOTH">Обеим</option>
+                        </select>
                       </td>
                       <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
                         {op.unit ?? '—'}
@@ -369,6 +397,7 @@ function CreateOperationDialog({
     description?: string;
     tariff?: number;
     applySizeCoef?: boolean;
+    phase?: 'INCOMING' | 'OUTGOING' | 'BOTH';
   }) => Promise<unknown>;
   isLoading?: boolean;
 }) {
@@ -377,6 +406,7 @@ function CreateOperationDialog({
   const [description, setDescription] = useState('');
   const [tariff, setTariff] = useState('');
   const [applySizeCoef, setApplySizeCoef] = useState(false);
+  const [phase, setPhase] = useState<'INCOMING' | 'OUTGOING' | 'BOTH'>('OUTGOING');
 
   const reset = () => {
     setName('');
@@ -384,6 +414,7 @@ function CreateOperationDialog({
     setDescription('');
     setTariff('');
     setApplySizeCoef(false);
+    setPhase('OUTGOING');
   };
 
   const handleClose = () => {
@@ -407,6 +438,7 @@ function CreateOperationDialog({
       description: description.trim() || undefined,
       tariff: parsedTariff,
       applySizeCoef,
+      phase,
     });
     handleClose();
   };
@@ -456,6 +488,18 @@ function CreateOperationDialog({
           />
           Применять размерный коэффициент К по ШДВ
         </label>
+        <div>
+          <label className="label">Относится к</label>
+          <select
+            value={phase}
+            onChange={(e) => setPhase(e.target.value as typeof phase)}
+            className="input"
+          >
+            <option value="OUTGOING">Отгрузке (ИСП)</option>
+            <option value="INCOMING">Приёмке (ВХП)</option>
+            <option value="BOTH">Обеим</option>
+          </select>
+        </div>
         <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
           <button type="button" className="btn-secondary" onClick={handleClose} disabled={isLoading}>
             Отмена

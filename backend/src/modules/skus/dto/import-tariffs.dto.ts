@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -85,6 +86,14 @@ export class UpdateOperationDto {
   @IsOptional()
   @IsBoolean()
   applySizeCoef?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'К какому документу операция относится: приёмка (ВХП), отгрузка (ИСП) или обе',
+    enum: ['INCOMING', 'OUTGOING', 'BOTH'],
+  })
+  @IsOptional()
+  @IsIn(['INCOMING', 'OUTGOING', 'BOTH'])
+  phase?: string;
 }
 
 export class CreateOperationDto {
@@ -115,4 +124,13 @@ export class CreateOperationDto {
   @IsOptional()
   @IsBoolean()
   applySizeCoef?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'К какому документу операция относится: приёмка (ВХП), отгрузка (ИСП) или обе',
+    enum: ['INCOMING', 'OUTGOING', 'BOTH'],
+    default: 'OUTGOING',
+  })
+  @IsOptional()
+  @IsIn(['INCOMING', 'OUTGOING', 'BOTH'])
+  phase?: string;
 }

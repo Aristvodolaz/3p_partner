@@ -13,13 +13,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +52,7 @@ import com.npp.tsd.core.designsystem.component.FullScreenLoading
 import com.npp.tsd.core.designsystem.theme.Spacing
 import com.npp.tsd.core.model.IncomingDelivery
 import com.npp.tsd.core.model.IncomingDeliveryItem
+import com.npp.tsd.core.model.IncomingItemOperation
 import com.npp.tsd.core.model.ReceiveIncomingDeliveryItemBody
 import com.npp.tsd.core.model.ZoneType
 
@@ -93,6 +100,7 @@ fun IncomingReceivingScreen(
                 employeeName = employeeName,
                 receivingAddresses = receivingAddresses,
                 onSubmit = { items -> vm.submitReceipt(items) },
+                onConfirmOperations = { itemId, qty, final -> vm.confirmItem(itemId, qty, final) },
                 modifier = Modifier.padding(padding),
             )
         }
@@ -104,6 +112,8 @@ private data class ReceivingRow(
     val article: String,
     val name: String,
     val quantity: Int,
+    val confirmedQuantity: Int,
+    val operations: List<IncomingItemOperation>,
     var factQty: String,
     var addressCode: String,
 )
@@ -115,6 +125,7 @@ private fun ReceivingForm(
     employeeName: String,
     receivingAddresses: List<String>,
     onSubmit: (List<ReceiveIncomingDeliveryItemBody>) -> Unit,
+    onConfirmOperations: (itemId: Int, quantity: Int, final: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pending = delivery.items.filter { it.factQuantity == null }
@@ -122,7 +133,11 @@ private fun ReceivingForm(
 
     val rows = remember(pending) {
         pending.map {
-            ReceivingRow(it.id, it.article, it.name ?: it.article, it.quantity, it.quantity.toString(), "")
+            ReceivingRow(
+                it.id, it.article, it.name ?: it.article, it.quantity, it.confirmedQuantity, it.operations,
+                if (it.operations.isNotEmpty()) it.confirmedQuantity.toString() else it.quantity.toString(),
+                "",
+            )
         }.toMutableStateList()
     }
 
@@ -158,12 +173,19 @@ private fun ReceivingForm(
         }
 
         if (pending.isNotEmpty()) {
-            items(rows.size) { idx -> PendingRow(rows[idx], receivingAddresses) }
+            items(rows.size) { idx ->
+                PendingRow(rows[idx], receivingAddresses, saving, onConfirmOperations)
+            }
             item {
                 Button(
                     enabled = !saving,
                     onClick = {
                         val bodies = rows.mapNotNull {
+                            // Пока операции по позиции не обработаны полностью — не даём
+                            // разместить её вместе с остальными (см. PendingRow/гейт на бэке).
+                            if (it.operations.isNotEmpty() && it.confirmedQuantity < it.quantity) {
+                                return@mapNotNull null
+                            }
                             val qty = it.factQty.toIntOrNull() ?: return@mapNotNull null
                             ReceiveIncomingDeliveryItemBody(
                                 itemId = it.itemId,
@@ -195,9 +217,17 @@ private fun ReceivedRow(item: IncomingDeliveryItem) {
 }
 
 @Composable
-private fun PendingRow(row: ReceivingRow, receivingAddresses: List<String>) {
+private fun PendingRow(
+    row: ReceivingRow,
+    receivingAddresses: List<String>,
+    saving: Boolean,
+    onConfirmOperations: (itemId: Int, quantity: Int, final: Boolean) -> Unit,
+) {
     var factQty by remember { mutableStateOf(row.factQty) }
     var addressCode by remember { mutableStateOf(row.addressCode) }
+    var showOpsDialog by remember { mutableStateOf(false) }
+    val needsProcessing = row.operations.isNotEmpty() && row.confirmedQuantity < row.quantity
+
     AppCard(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs), contentPadding = PaddingValues(Spacing.sm)) {
         Text("${row.article} — ${row.name}", style = MaterialTheme.typography.bodyMedium)
         Text(
@@ -205,6 +235,55 @@ private fun PendingRow(row: ReceivingRow, receivingAddresses: List<String>) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (needsProcessing) {
+            Text(
+                "Обработано: ${row.confirmedQuantity} из ${row.quantity}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.xs),
+            )
+            Column(Modifier.padding(top = Spacing.xs)) {
+                row.operations.forEach { op ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(op.operation.name, style = MaterialTheme.typography.bodySmall)
+                        Icon(
+                            if (op.done) Icons.Filled.CheckCircleOutline else Icons.Filled.RadioButtonUnchecked,
+                            contentDescription = if (op.done) "Выполнено" else "Не выполнено",
+                            tint = if (op.done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Button(
+                enabled = !saving,
+                onClick = { showOpsDialog = true },
+                modifier = Modifier.padding(top = Spacing.xs),
+            ) {
+                Text(if (saving) "Сохранение..." else "Обработать")
+            }
+            if (showOpsDialog) {
+                IncomingConfirmDialog(
+                    declared = row.quantity,
+                    confirmedSoFar = row.confirmedQuantity,
+                    onDismiss = { showOpsDialog = false },
+                    onConfirmPartial = { qty ->
+                        showOpsDialog = false
+                        onConfirmOperations(row.itemId, qty, false)
+                    },
+                    onFinish = { qty ->
+                        showOpsDialog = false
+                        onConfirmOperations(row.itemId, qty, true)
+                    },
+                )
+            }
+            return@AppCard
+        }
+
         Row(
             Modifier.fillMaxWidth().padding(top = Spacing.xs),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -249,4 +328,50 @@ private fun PendingRow(row: ReceivingRow, receivingAddresses: List<String>) {
             }
         }
     }
+}
+
+/**
+ * Штучная обработка операций перед размещением (зеркало диалога отгрузки
+ * ИСП): "Подтвердить" шлёт частичный факт и закрывает диалог, "Завершить"
+ * шлёт последнюю партию и требует набрать полное заявленное количество.
+ */
+@Composable
+private fun IncomingConfirmDialog(
+    declared: Int,
+    confirmedSoFar: Int,
+    onDismiss: () -> Unit,
+    onConfirmPartial: (quantity: Int) -> Unit,
+    onFinish: (quantity: Int) -> Unit,
+) {
+    var input by remember { mutableStateOf("") }
+    val entered = input.toIntOrNull() ?: 0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Обработка") },
+        text = {
+            Column {
+                Text("Заявлено: $declared", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Обработано: $confirmedSoFar",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.sm),
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it.filter(Char::isDigit) },
+                    label = { Text("Количество") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            Row {
+                TextButton(enabled = entered > 0, onClick = { onConfirmPartial(entered) }) { Text("Подтвердить") }
+                Button(enabled = entered > 0, onClick = { onFinish(entered) }) { Text("Завершить") }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
+    )
 }

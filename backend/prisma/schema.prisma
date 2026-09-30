@@ -309,6 +309,7 @@ model Operation {
   tariffHistory                  TariffHistory[]
   executions                     ItemOperationExecution[]
   outgoingDeliveryItemOperations OutgoingDeliveryItemOperation[]
+  incomingDeliveryItemOperations IncomingDeliveryItemOperation[]
 
   @@map("OperationsCatalog")
 }
@@ -545,13 +546,37 @@ model IncomingDeliveryItem {
   barcode      String?          @db.NVarChar(100)
   quantity     Int
   factQuantity Int?
+  // Накопленное количество по частичным подтверждениям операций (штучная
+  // обработка перед размещением) — тот же приём, что у OutgoingDeliveryItem.
+  confirmedQuantity Int         @default(0)
   weight       Decimal?         @db.Decimal(10, 3)
   volume       Decimal?         @db.Decimal(10, 3)
   delivery     IncomingDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   sku          Sku?             @relation(fields: [skuId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  operations   IncomingDeliveryItemOperation[]
 
   @@index([deliveryId])
   @@map("IncomingDeliveryItems")
+}
+
+/// Состав операций по позиции ВХП — обработка перед размещением на складе
+/// (чек-лист из SKU, отфильтрованный по Operation.phase IN INCOMING/BOTH).
+/// Зеркало OutgoingDeliveryItemOperation для симметричного шага у приёмки.
+model IncomingDeliveryItemOperation {
+  id          Int                  @id @default(autoincrement())
+  itemId      Int
+  operationId Int
+  value       String?              @db.NVarChar(100)
+  done        Boolean              @default(false)
+  factQty     Int?
+  executedBy  String?              @db.NVarChar(255)
+  executedAt  DateTime?            @db.DateTime2
+  item        IncomingDeliveryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  operation   Operation            @relation(fields: [operationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([itemId, operationId])
+  @@index([itemId])
+  @@map("IncomingDeliveryItemOperations")
 }
 
 /// ИСП — заявка на исходящую поставку.

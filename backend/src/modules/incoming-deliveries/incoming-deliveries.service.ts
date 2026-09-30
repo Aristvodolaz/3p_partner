@@ -9,6 +9,7 @@ import { DocumentNumberingService } from '../../common/document-numbering/docume
 import { OutgoingDeliveriesService } from '../outgoing-deliveries/outgoing-deliveries.service';
 import { StorageService } from '../storage/storage.service';
 import {
+  ConfirmIncomingDeliveryItemDto,
   CreateIncomingDeliveryDto,
   IncomingDeliveryItemDto,
   ReceiveIncomingDeliveryDto,
@@ -17,7 +18,12 @@ import {
 
 const include = {
   partner: { select: { id: true, name: true } },
-  items: { include: { sku: { select: { id: true, article: true, name: true } } } },
+  items: {
+    include: {
+      sku: { select: { id: true, article: true, name: true } },
+      operations: { include: { operation: true } },
+    },
+  },
 } satisfies Prisma.IncomingDeliveryInclude;
 
 function normalizeArticle(s: string): string {
@@ -151,6 +157,20 @@ export class IncomingDeliveriesService {
       }
     }
 
+    // Гейт: если у позиции настроены операции обработки (SKU, phase
+    // INCOMING/BOTH), размещать её на складе можно только после того, как
+    // они обработаны через PATCH items/:itemId/confirm (см. confirmItem
+    // ниже) — factQuantity к этому моменту уже проставлен этим вызовом.
+    for (const line of dto.items) {
+      if (!line.addressCode) continue;
+      const item = delivery.items.find((i) => i.id === line.itemId)!;
+      if (item.operations.length > 0 && item.confirmedQuantity < item.quantity) {
+        throw new ConflictException(
+          `Сначала обработайте операции по позиции «${item.article}» на ТСД (обработано ${item.confirmedQuantity} из ${item.quantity}), потом размещайте на складе`,
+        );
+      }
+    }
+
     await this.prisma.$transaction(
       dto.items.map((line) =>
         this.prisma.incomingDeliveryItem.update({
@@ -220,16 +240,71 @@ export class IncomingDeliveriesService {
     return this.findOne(id);
   }
 
+  /**
+   * Штучная обработка операций позиции ВХП (зеркало ИСП confirmItem):
+   * каждый вызов добавляет quantity к накопленному confirmedQuantity — это
+   * шаг обработки ПЕРЕД размещением, не трогает factQuantity/остатки на
+   * складе (их проставляет receive()). final=true проверяет, что накоплено
+   * не меньше заявленного, иначе просит указать остаток.
+   */
+  async confirmItem(itemId: number, dto: ConfirmIncomingDeliveryItemDto, confirmedBy: string) {
+    const item = await this.prisma.incomingDeliveryItem.findUnique({
+      where: { id: itemId },
+      include: { delivery: true },
+    });
+    if (!item) throw new NotFoundException(`Позиция #${itemId} не найдена`);
+    if (item.factQuantity != null) {
+      throw new ConflictException('Позиция уже принята');
+    }
+    if (item.delivery.status === 'Выполнено' || item.delivery.status === 'Отмена') {
+      throw new ConflictException(`Заявка уже в статусе «${item.delivery.status}»`);
+    }
+
+    const totalConfirmed = item.confirmedQuantity + dto.quantity;
+    if (dto.final && totalConfirmed < item.quantity) {
+      throw new ConflictException(
+        `Обработано только ${totalConfirmed} из ${item.quantity} — укажите остаток перед завершением`,
+      );
+    }
+
+    const { count } = await this.prisma.incomingDeliveryItem.updateMany({
+      where: { id: itemId, factQuantity: null },
+      data: { confirmedQuantity: totalConfirmed },
+    });
+    if (count === 0) throw new ConflictException('Позиция уже принята');
+
+    if (item.delivery.status === 'Создана') {
+      await this.prisma.incomingDelivery.update({ where: { id: item.deliveryId }, data: { status: 'Процесс' } });
+      await this.numbering.logStatus('INCOMING', item.deliveryId, 'Процесс', confirmedBy);
+    }
+
+    return this.prisma.incomingDeliveryItem.findUniqueOrThrow({
+      where: { id: itemId },
+      include: { sku: { select: { id: true, article: true, name: true } }, operations: { include: { operation: true } } },
+    });
+  }
+
   private async buildSkuIndex(partnerId: number) {
-    const skus = await this.prisma.sku.findMany({ where: { partnerId } });
+    const skus = await this.prisma.sku.findMany({
+      where: { partnerId },
+      include: { operations: { include: { operation: true } } },
+    });
     return new Map(skus.map((s) => [normalizeArticle(s.article), s]));
   }
 
   private buildItem(
     item: IncomingDeliveryItemDto,
-    skuByArticle: Map<string, { id: number; name: string }>,
+    skuByArticle: Map<
+      string,
+      { id: number; name: string; operations: { operation: { id: number; phase: string }; value: string | null }[] }
+    >,
   ): Prisma.IncomingDeliveryItemCreateWithoutDeliveryInput {
     const sku = skuByArticle.get(normalizeArticle(item.article));
+    // Дефолтные операции по SKU — обработка перед размещением (зеркало ИСП),
+    // только с фазой INCOMING/BOTH; исходящие операции сюда не попадают.
+    const defaultOps = (sku?.operations ?? []).filter((so) =>
+      ['INCOMING', 'BOTH'].includes(so.operation.phase),
+    );
     return {
       article: item.article,
       name: item.name ?? sku?.name ?? null,
@@ -238,6 +313,14 @@ export class IncomingDeliveriesService {
       weight: item.weight ?? null,
       volume: item.volume ?? null,
       sku: sku ? { connect: { id: sku.id } } : undefined,
+      operations: defaultOps.length
+        ? {
+            create: defaultOps.map((so) => ({
+              operationId: so.operation.id,
+              value: so.value ?? '1',
+            })),
+          }
+        : undefined,
     };
   }
 
@@ -246,21 +329,26 @@ export class IncomingDeliveriesService {
     deliveryId: number,
     existing: { id: number; article: string }[],
     incoming: IncomingDeliveryItemDto[],
-    skuByArticle: Map<string, { id: number; name: string }>,
+    skuByArticle: Map<
+      string,
+      { id: number; name: string; operations: { operation: { id: number; phase: string }; value: string | null }[] }
+    >,
   ) {
     const incomingIds = new Set(incoming.filter((i) => i.id != null).map((i) => i.id));
     const toRemove = existing.filter((item) => !incomingIds.has(item.id));
 
     await this.prisma.$transaction([
       ...toRemove.map((item) => this.prisma.incomingDeliveryItem.delete({ where: { id: item.id } })),
+      // Обновление существующей позиции не трогает уже созданный состав
+      // операций — только article/name/quantity/вес/объём/sku (см. тот же
+      // приём в outgoing-deliveries.service.ts replaceItems).
       ...incoming
         .filter((item): item is IncomingDeliveryItemDto & { id: number } => item.id != null)
-        .map((item) =>
-          this.prisma.incomingDeliveryItem.update({
-            where: { id: item.id },
-            data: this.buildItem(item, skuByArticle),
-          }),
-        ),
+        .map((item) => {
+          const { operations: _ops, ...scalarData } = this.buildItem(item, skuByArticle);
+          void _ops;
+          return this.prisma.incomingDeliveryItem.update({ where: { id: item.id }, data: scalarData });
+        }),
       ...incoming
         .filter((item) => item.id == null)
         .map((item) =>

@@ -11,7 +11,9 @@ import com.npp.tsd.core.model.CreateReceiptBody
 import com.npp.tsd.core.model.CreateShipmentBody
 import com.npp.tsd.core.model.CountInventoryTaskBody
 import com.npp.tsd.core.model.ExecuteOperationBody
+import com.npp.tsd.core.model.ConfirmIncomingItemBody
 import com.npp.tsd.core.model.IncomingDelivery
+import com.npp.tsd.core.model.IncomingDeliveryItem
 import com.npp.tsd.core.model.IncomingDeliveriesResponse
 import com.npp.tsd.core.model.InventoryTask
 import com.npp.tsd.core.model.InventoryTasksResponse
@@ -203,6 +205,12 @@ interface TsdApi {
         @Path("id") id: Int,
         @Body body: ReceiveIncomingDeliveryBody,
     ): IncomingDelivery
+
+    @PATCH("incoming-deliveries/items/{itemId}/confirm")
+    suspend fun confirmIncomingItem(
+        @Path("itemId") itemId: Int,
+        @Body body: ConfirmIncomingItemBody,
+    ): IncomingDeliveryItem
 
     // --- ИСП ---
 

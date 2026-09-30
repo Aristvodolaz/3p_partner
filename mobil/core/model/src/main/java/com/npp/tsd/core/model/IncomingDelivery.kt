@@ -3,6 +3,19 @@ package com.npp.tsd.core.model
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class IncomingItemOperation(
+    val id: Int,
+    val itemId: Int,
+    val operationId: Int,
+    val value: String? = null,
+    val done: Boolean = false,
+    val factQty: Int? = null,
+    val executedBy: String? = null,
+    val executedAt: String? = null,
+    val operation: OperationDto,
+)
+
+@Serializable
 data class IncomingDeliveryItem(
     val id: Int,
     val deliveryId: Int,
@@ -12,9 +25,11 @@ data class IncomingDeliveryItem(
     val barcode: String? = null,
     val quantity: Int,
     val factQuantity: Int? = null,
+    val confirmedQuantity: Int = 0,
     val weight: String? = null,
     val volume: String? = null,
     val sku: SkuRef? = null,
+    val operations: List<IncomingItemOperation> = emptyList(),
 )
 
 @Serializable
@@ -51,4 +66,11 @@ data class ReceiveIncomingDeliveryItemBody(
 @Serializable
 data class ReceiveIncomingDeliveryBody(
     val items: List<ReceiveIncomingDeliveryItemBody>,
+)
+
+/** Штучная обработка операций позиции ВХП перед размещением: quantity — добавка, final требует полного количества. */
+@Serializable
+data class ConfirmIncomingItemBody(
+    val quantity: Int,
+    val final: Boolean = false,
 )

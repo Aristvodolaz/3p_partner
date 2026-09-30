@@ -1,6 +1,7 @@
 package com.npp.tsd.core.data
 
 import com.npp.tsd.core.network.ApiProvider
+import com.npp.tsd.core.model.ConfirmIncomingItemBody
 import com.npp.tsd.core.model.ReceiveIncomingDeliveryBody
 import com.npp.tsd.core.model.ReceiveIncomingDeliveryItemBody
 
@@ -17,4 +18,7 @@ class IncomingDeliveriesRepository(private val settings: SettingsRepository) {
 
     suspend fun receive(id: Int, items: List<ReceiveIncomingDeliveryItemBody>) =
         api().receiveIncomingDelivery(id, ReceiveIncomingDeliveryBody(items))
+
+    suspend fun confirmItem(itemId: Int, quantity: Int, final: Boolean) =
+        api().confirmIncomingItem(itemId, ConfirmIncomingItemBody(quantity, final))
 }

@@ -97,6 +97,7 @@ export function useUpdateOperation() {
       unit?: string;
       tariff?: number;
       applySizeCoef?: boolean;
+      phase?: 'INCOMING' | 'OUTGOING' | 'BOTH';
     }) => skusApi.updateOperation(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: OPERATIONS_KEY });

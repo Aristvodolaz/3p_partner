@@ -57,6 +57,23 @@ class IncomingDeliveryViewModel(private val repository: IncomingDeliveriesReposi
         }
     }
 
+    /** Штучная обработка операций позиции — quantity добавляется к накопленному, final требует полного количества. */
+    fun confirmItem(itemId: Int, quantity: Int, final: Boolean) {
+        if (quantity <= 0) return
+        viewModelScope.launch {
+            _saving.value = true
+            _actionError.value = null
+            try {
+                repository.confirmItem(itemId, quantity, final)
+                fetch()
+            } catch (e: Exception) {
+                _actionError.value = e.friendlyMessage("Не удалось подтвердить позицию")
+            } finally {
+                _saving.value = false
+            }
+        }
+    }
+
     fun clearError() {
         _actionError.value = null
     }

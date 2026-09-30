@@ -14,6 +14,7 @@ import { CurrentEmployee } from '../../common/decorators/current-employee.decora
 import { CurrentEmployeeInfo } from '../../common/guards/jwt-auth.guard';
 import { IncomingDeliveriesService } from './incoming-deliveries.service';
 import {
+  ConfirmIncomingDeliveryItemDto,
   CreateIncomingDeliveryDto,
   ReceiveIncomingDeliveryDto,
   UpdateIncomingDeliveryDto,
@@ -76,5 +77,17 @@ export class IncomingDeliveriesController {
     @CurrentEmployee() employee: CurrentEmployeeInfo,
   ) {
     return this.service.receive(id, dto, employee.fullName);
+  }
+
+  @Patch('items/:itemId/confirm')
+  @ApiOperation({
+    summary: 'Штучная обработка операций позиции с ТСД перед размещением: quantity добавляется к накопленному, final требует полного количества',
+  })
+  confirmItem(
+    @Param('itemId', ParseIntPipe) itemId: number,
+    @Body() dto: ConfirmIncomingDeliveryItemDto,
+    @CurrentEmployee() employee: CurrentEmployeeInfo,
+  ) {
+    return this.service.confirmItem(itemId, dto, employee.fullName);
   }
 }

@@ -122,3 +122,19 @@ export class ReceiveIncomingDeliveryDto {
   @Type(() => ReceiveIncomingDeliveryItemDto)
   items: ReceiveIncomingDeliveryItemDto[];
 }
+
+/** Штучная обработка операций позиции ВХП перед размещением (зеркало ИСП). */
+export class ConfirmIncomingDeliveryItemDto {
+  @ApiProperty({ description: 'Количество, подтверждаемое этим вызовом (не итог, а добавка)' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity: number;
+
+  @ApiPropertyOptional({
+    description: 'true — финальное подтверждение (позиция готова к размещению), false/не указано — промежуточное',
+  })
+  @IsOptional()
+  @IsBoolean()
+  final?: boolean;
+}

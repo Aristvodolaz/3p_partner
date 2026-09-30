@@ -71,7 +71,14 @@ export const skusApi = {
 
   updateOperation: async (
     id: number,
-    body: { name?: string; description?: string; unit?: string; tariff?: number; applySizeCoef?: boolean },
+    body: {
+      name?: string;
+      description?: string;
+      unit?: string;
+      tariff?: number;
+      applySizeCoef?: boolean;
+      phase?: 'INCOMING' | 'OUTGOING' | 'BOTH';
+    },
   ): Promise<Operation> => {
     const { data } = await api.patch(`/tariffs/operations/${id}`, body);
     return data;
@@ -83,6 +90,7 @@ export const skusApi = {
     description?: string;
     tariff?: number;
     applySizeCoef?: boolean;
+    phase?: 'INCOMING' | 'OUTGOING' | 'BOTH';
   }): Promise<Operation> => {
     const { data } = await api.post('/tariffs/operations', body);
     return data;

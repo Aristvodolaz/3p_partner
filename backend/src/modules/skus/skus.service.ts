@@ -195,7 +195,14 @@ export class SkusService {
 
   async updateOperation(
     id: number,
-    data: { name?: string; description?: string; unit?: string; tariff?: number; applySizeCoef?: boolean },
+    data: {
+      name?: string;
+      description?: string;
+      unit?: string;
+      tariff?: number;
+      applySizeCoef?: boolean;
+      phase?: string;
+    },
   ) {
     const op = await this.prisma.operation.findUnique({ where: { id } });
     if (!op) throw new NotFoundException(`Операция #${id} не найдена`);
@@ -209,6 +216,7 @@ export class SkusService {
     description?: string;
     tariff?: number;
     applySizeCoef?: boolean;
+    phase?: string;
   }) {
     const ops = await this.getOperations();
     const norm = normalizeName(data.name);
@@ -224,6 +232,7 @@ export class SkusService {
         description: data.description ?? null,
         tariff: data.tariff ?? null,
         applySizeCoef: data.applySizeCoef ?? false,
+        phase: data.phase ?? 'OUTGOING',
         sortOrder: maxSort + 1,
       },
     });
