@@ -9,10 +9,13 @@ import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -124,7 +127,19 @@ fun AppNav(container: AppContainer, initialEmployee: EmployeeInfo?) {
                                 }
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
+                            label = {
+                                // 6 вкладок тесные: «Настройки» иначе переносится на
+                                // две строки («Настро/йки») или обрезается у края.
+                                // Один ряд + уменьшенный кегль, чтобы самое длинное
+                                // слово влезло целиком в слот вкладки.
+                                Text(
+                                    tab.label,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Visible,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                )
+                            },
                         )
                     }
                 }
